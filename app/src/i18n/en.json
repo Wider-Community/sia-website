@@ -113,7 +113,25 @@
   },
   "testimonials": {
     "label": "Perspectives",
-    "heading": "What Industry Leaders Say"
+    "heading": "What Industry Leaders Say",
+    "t1quote": "The Saudi-Malaysia corridor represents one of the most underserved yet high-potential bilateral investment channels in the emerging market landscape.",
+    "t1name": "Industry Analysis",
+    "t1role": "McKinsey Global Institute",
+    "t2quote": "Tokenization and digital platforms are transforming how cross-border investment facilitation works. The middle market is where the real transformation happens.",
+    "t2name": "Matt Higginson",
+    "t2role": "McKinsey & Company",
+    "t3quote": "Saudi Vision 2030 is creating unprecedented outbound investment flows. Southeast Asia, particularly Malaysia, is a natural destination for Islamic finance capital.",
+    "t3name": "Market Commentary",
+    "t3role": "Bloomberg Intelligence",
+    "t4quote": "The halal economy alone represents a $2.3 trillion global opportunity. Malaysia's position as the Islamic finance hub of ASEAN makes it the gateway for Gulf capital.",
+    "t4name": "State of the Global Islamic Economy",
+    "t4role": "DinarStandard Report",
+    "t5quote": "Risk management for institutions entering new bilateral corridors requires specialized knowledge of both regulatory environments. One-size-fits-all approaches fail.",
+    "t5name": "Glenn Morgan",
+    "t5role": "Aon Risk Solutions",
+    "t6quote": "The future of cross-border deal facilitation is technology-enabled, compliance-first, and corridor-specific. Generic platforms cannot serve specialized bilateral needs.",
+    "t6name": "Industry Outlook",
+    "t6role": "Deloitte Financial Advisory"
   },
   "cta": {
     "heading": "Ready to Explore Cross-Border Opportunities?",

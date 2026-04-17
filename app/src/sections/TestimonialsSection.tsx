@@ -1,66 +1,38 @@
 // Inspired by 21st.dev: sean0205/3d-testimonials + Efferd/testimonials-columns
-// 3D animated testimonial cards with marquee scrolling
+// Testimonial cards with marquee scrolling — fully localized
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Marquee } from "@/components/effects/Marquee";
 import { Quote } from "lucide-react";
 
-const testimonials = [
-  {
-    quote:
-      "The Saudi-Malaysia corridor represents one of the most underserved yet high-potential bilateral investment channels in the emerging market landscape.",
-    name: "Industry Analysis",
-    role: "McKinsey Global Institute",
-  },
-  {
-    quote:
-      "Tokenization and digital platforms are transforming how cross-border investment facilitation works. The middle market is where the real transformation happens.",
-    name: "Matt Higginson",
-    role: "McKinsey & Company",
-  },
-  {
-    quote:
-      "Saudi Vision 2030 is creating unprecedented outbound investment flows. Southeast Asia, particularly Malaysia, is a natural destination for Islamic finance capital.",
-    name: "Market Commentary",
-    role: "Bloomberg Intelligence",
-  },
-  {
-    quote:
-      "The halal economy alone represents a $2.3 trillion global opportunity. Malaysia's position as the Islamic finance hub of ASEAN makes it the gateway for Gulf capital.",
-    name: "State of the Global Islamic Economy",
-    role: "DinarStandard Report",
-  },
-  {
-    quote:
-      "Risk management for institutions entering new bilateral corridors requires specialized knowledge of both regulatory environments. One-size-fits-all approaches fail.",
-    name: "Glenn Morgan",
-    role: "Aon Risk Solutions",
-  },
-  {
-    quote:
-      "The future of cross-border deal facilitation is technology-enabled, compliance-first, and corridor-specific. Generic platforms cannot serve specialized bilateral needs.",
-    name: "Industry Outlook",
-    role: "Deloitte Financial Advisory",
-  },
+const testimonialKeys = [
+  { quoteKey: "testimonials.t1quote", nameKey: "testimonials.t1name", roleKey: "testimonials.t1role" },
+  { quoteKey: "testimonials.t2quote", nameKey: "testimonials.t2name", roleKey: "testimonials.t2role" },
+  { quoteKey: "testimonials.t3quote", nameKey: "testimonials.t3name", roleKey: "testimonials.t3role" },
+  { quoteKey: "testimonials.t4quote", nameKey: "testimonials.t4name", roleKey: "testimonials.t4role" },
+  { quoteKey: "testimonials.t5quote", nameKey: "testimonials.t5name", roleKey: "testimonials.t5role" },
+  { quoteKey: "testimonials.t6quote", nameKey: "testimonials.t6name", roleKey: "testimonials.t6role" },
 ];
 
-function TestimonialCard({ testimonial }: { testimonial: typeof testimonials[0] }) {
+function TestimonialCard({ quoteKey, nameKey, roleKey }: { quoteKey: string; nameKey: string; roleKey: string }) {
+  const { t } = useTranslation();
+  const name = t(nameKey);
   return (
     <div className="w-[350px] shrink-0 p-6 rounded-2xl border border-white/[0.06] bg-white/[0.02] hover:border-gold/15 transition-all duration-300 group">
       <Quote className="w-5 h-5 text-gold/30 mb-4" />
       <p className="text-white/50 text-sm leading-relaxed mb-6 font-sans">
-        "{testimonial.quote}"
+        "{t(quoteKey)}"
       </p>
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center">
           <span className="text-gold text-xs font-bold font-sans">
-            {testimonial.name.charAt(0)}
+            {name.charAt(0)}
           </span>
         </div>
         <div>
-          <div className="text-sm font-medium text-white/80 font-sans">{testimonial.name}</div>
-          <div className="text-xs text-white/30 font-sans">{testimonial.role}</div>
+          <div className="text-sm font-medium text-white/80 font-sans">{name}</div>
+          <div className="text-xs text-white/30 font-sans">{t(roleKey)}</div>
         </div>
       </div>
     </div>
@@ -92,16 +64,16 @@ export function TestimonialsSection() {
       {/* Marquee Row 1 */}
       <div className="mb-4">
         <Marquee speed={50}>
-          {testimonials.slice(0, 3).map((t, i) => (
-            <TestimonialCard key={i} testimonial={t} />
+          {testimonialKeys.slice(0, 3).map((tk, i) => (
+            <TestimonialCard key={i} {...tk} />
           ))}
         </Marquee>
       </div>
 
       {/* Marquee Row 2 (reverse) */}
       <Marquee speed={45} reverse>
-        {testimonials.slice(3).map((t, i) => (
-          <TestimonialCard key={i} testimonial={t} />
+        {testimonialKeys.slice(3).map((tk, i) => (
+          <TestimonialCard key={i} {...tk} />
         ))}
       </Marquee>
 

@@ -8,27 +8,31 @@ import { ArrowRight } from "lucide-react";
 const mapPath =
   "M 30,85 L 45,78 55,80 62,72 70,70 75,65 80,68 88,62 95,65 100,60 108,58 112,62 118,58 125,60 130,55 138,52 142,56 148,50 155,48 160,52 168,55 172,50 178,48 185,52 190,48 195,52 200,55 208,52 215,58 220,62 228,60 235,65 240,62 248,68 255,65 260,70 268,72 275,68 280,75 288,72 295,78 300,75 308,80 315,78 320,82 328,85 335,82 340,88 348,85 355,90 360,88 365,92 370,95";
 
-// Saudi Arabia flag — green field with white Arabic shahada text and sword
+// Saudi Arabia flag — green field with white Shahada text and sword
 function SaudiFlag({ x, y, size = 36 }: { x: number; y: number; size?: number }) {
   const w = size;
   const h = size * 0.667;
   return (
     <g transform={`translate(${x - w / 2}, ${y - h - 4})`}>
-      {/* Shadow */}
       <rect x="1" y="1" width={w} height={h} rx="2" fill="black" opacity="0.2" />
-      {/* Green field */}
       <rect width={w} height={h} rx="2" fill="#006C35" />
-      {/* Shahada text — simplified as white horizontal line shapes */}
-      <line x1={w * 0.15} y1={h * 0.3} x2={w * 0.85} y2={h * 0.3} stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-      <line x1={w * 0.2} y1={h * 0.3} x2={w * 0.2} y2={h * 0.15} stroke="white" strokeWidth="1" strokeLinecap="round" />
-      <line x1={w * 0.35} y1={h * 0.3} x2={w * 0.35} y2={h * 0.18} stroke="white" strokeWidth="1" strokeLinecap="round" />
-      <line x1={w * 0.5} y1={h * 0.3} x2={w * 0.5} y2={h * 0.15} stroke="white" strokeWidth="1" strokeLinecap="round" />
-      <line x1={w * 0.65} y1={h * 0.3} x2={w * 0.65} y2={h * 0.18} stroke="white" strokeWidth="1" strokeLinecap="round" />
-      <line x1={w * 0.8} y1={h * 0.3} x2={w * 0.8} y2={h * 0.15} stroke="white" strokeWidth="1" strokeLinecap="round" />
-      {/* Sword — horizontal line with handle */}
-      <line x1={w * 0.15} y1={h * 0.58} x2={w * 0.85} y2={h * 0.58} stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1={w * 0.15} y1={h * 0.5} x2={w * 0.15} y2={h * 0.66} stroke="white" strokeWidth="1" strokeLinecap="round" />
-      {/* Border */}
+      {/* Shahada — Arabic calligraphy rendered as SVG text */}
+      <text
+        x={w / 2}
+        y={h * 0.42}
+        textAnchor="middle"
+        fill="white"
+        fontSize={h * 0.28}
+        fontFamily="'Noto Sans Arabic', 'Arial', sans-serif"
+        fontWeight="700"
+        direction="rtl"
+      >
+        لا إله إلا الله
+      </text>
+      {/* Sword — curved blade pointing left with guard */}
+      <line x1={w * 0.12} y1={h * 0.72} x2={w * 0.88} y2={h * 0.72} stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+      <path d={`M ${w * 0.88} ${h * 0.65} L ${w * 0.88} ${h * 0.79}`} stroke="white" strokeWidth="1" strokeLinecap="round" />
+      <circle cx={w * 0.12} cy={h * 0.72} r="1" fill="white" />
       <rect width={w} height={h} rx="2" fill="none" stroke="white" strokeWidth="0.5" opacity="0.2" />
     </g>
   );
