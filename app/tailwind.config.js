@@ -89,14 +89,7 @@ module.exports = {
           "0%,70%,100%": { opacity: "1" },
           "20%,50%": { opacity: "0" },
         },
-        "marquee": {
-          "0%": { transform: "translateX(0%)" },
-          "100%": { transform: "translateX(-100%)" },
-        },
-        "marquee-reverse": {
-          "0%": { transform: "translateX(-100%)" },
-          "100%": { transform: "translateX(0%)" },
-        },
+        // marquee keyframes defined in index.css to support --speed variable
         "fade-in": {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
@@ -118,8 +111,7 @@ module.exports = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "caret-blink": "caret-blink 1.25s ease-out infinite",
-        "marquee": "marquee 40s linear infinite",
-        "marquee-reverse": "marquee-reverse 40s linear infinite",
+        // marquee animations defined in index.css to support --speed variable
         "fade-in": "fade-in 0.5s ease-out forwards",
         "slide-up": "slide-up 0.5s ease-out forwards",
         "pulse-slow": "pulse-slow 3s ease-in-out infinite",
