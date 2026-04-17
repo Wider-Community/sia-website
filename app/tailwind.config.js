@@ -49,7 +49,7 @@ module.exports = {
           DEFAULT: "rgb(192 192 192 / <alpha-value>)",
           light: "rgb(232 232 232 / <alpha-value>)",
         },
-        navy: "rgb(10 22 40 / <alpha-value>)",
+        navy: "rgb(26 26 28 / <alpha-value>)",
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

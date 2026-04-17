@@ -18,7 +18,7 @@ export function HowItWorksSection() {
   const { t } = useTranslation();
 
   return (
-    <section id="platform" className="relative bg-[#060a10] py-24 lg:py-32" ref={ref}>
+    <section id="platform" className="relative bg-[#151516] py-24 lg:py-32" ref={ref}>
       {/* Subtle grid */}
       <div className="absolute inset-0 spotlight-grid opacity-50" />
 

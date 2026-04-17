@@ -30,8 +30,8 @@ export function Lamp({ children, className }: LampProps) {
           }}
           className="absolute right-1/2 h-40 overflow-visible"
         >
-          <div className="absolute w-full left-0 h-24 bottom-0 bg-[#0A0A0F] [mask-image:linear-gradient(to_top,white,transparent)]" />
-          <div className="absolute w-32 h-full left-0 bottom-0 bg-[#0A0A0F] [mask-image:linear-gradient(to_right,white,transparent)]" />
+          <div className="absolute w-full left-0 h-24 bottom-0 bg-[#151516] [mask-image:linear-gradient(to_top,white,transparent)]" />
+          <div className="absolute w-32 h-full left-0 bottom-0 bg-[#151516] [mask-image:linear-gradient(to_right,white,transparent)]" />
         </motion.div>
 
         {/* Right beam */}
@@ -45,8 +45,8 @@ export function Lamp({ children, className }: LampProps) {
           }}
           className="absolute left-1/2 h-40 overflow-visible"
         >
-          <div className="absolute w-32 h-full right-0 bottom-0 bg-[#0A0A0F] [mask-image:linear-gradient(to_left,white,transparent)]" />
-          <div className="absolute w-full right-0 h-24 bottom-0 bg-[#0A0A0F] [mask-image:linear-gradient(to_top,white,transparent)]" />
+          <div className="absolute w-32 h-full right-0 bottom-0 bg-[#151516] [mask-image:linear-gradient(to_left,white,transparent)]" />
+          <div className="absolute w-full right-0 h-24 bottom-0 bg-[#151516] [mask-image:linear-gradient(to_top,white,transparent)]" />
         </motion.div>
 
         {/* Gold line */}

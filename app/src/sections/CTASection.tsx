@@ -9,7 +9,7 @@ import { BorderBeam } from "@/components/effects/BorderBeam";
 export function CTASection() {
   const { t } = useTranslation();
   return (
-    <section id="contact" className="relative bg-[#0A0A0F] overflow-hidden">
+    <section id="contact" className="relative bg-[#151516] overflow-hidden">
       <Lamp>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
