@@ -16,7 +16,7 @@
     "heading1": "Bridging",
     "heading2": "Between Two Markets",
     "flipWords": ["Opportunity", "Investment", "Growth", "Innovation"],
-    "subtitle": "Institutional deal facilitation for the $18B+ Saudi Arabia — Malaysia investment corridor. From first introduction to financial close.",
+    "subtitle": "Cross-border deal facilitation for the $18B+ Saudi Arabia–Malaysia investment corridor. Shariah-compliant, Vision 2030 aligned. From first introduction to financial close.",
     "cta": "Schedule a Conversation",
     "learnMore": "Learn More",
     "stat1value": "$18B+",
@@ -49,7 +49,7 @@
   "valueProps": {
     "label": "Why SIA",
     "heading": "We operate where others don't",
-    "subtitle": "The gap between Big 4 consultants ($500K+ retainers) and investment banks ($100M+ deals only). That's where we thrive.",
+    "subtitle": "The gap between Big 4 consultants ($500K+ retainers) and investment banks ($100M+ deals only). SIA fills this with technology-enabled, Shariah-compliant deal facilitation.",
     "card1title": "Deal Facilitation",
     "card1desc": "End-to-end management from first introduction to financial close. We handle the complexity of cross-border transactions so you can focus on growth.",
     "card1stat": "$2M-$50M",
@@ -76,7 +76,7 @@
   "howItWorks": {
     "label": "The Process",
     "heading": "From Introduction to Close in 6 Months",
-    "subtitle": "A structured, transparent process that compresses 12-18 month deal cycles.",
+    "subtitle": "A structured, transparent cross-border deal facilitation process that compresses 12–18 month cycles. SAGIA and MIDA compliant.",
     "step1title": "Discovery & Matching",
     "step1desc": "AI-powered entity matching identifies optimal Saudi-Malaysian partnerships based on sector alignment, deal size, and strategic fit.",
     "step1duration": "2-4 weeks",
@@ -93,7 +93,7 @@
   "sectors": {
     "label": "Sectors",
     "heading": "Eight Industries, One Corridor",
-    "subtitle": "Deep sector expertise across the most active KSA-Malaysia deal verticals.",
+    "subtitle": "Deep sector expertise across the most active Saudi Arabia–Malaysia investment verticals. From halal food to Islamic finance.",
     "halal": "Halal & Food",
     "halalDesc": "Manufacturing & export partnerships",
     "healthcare": "Healthcare",
@@ -133,6 +133,19 @@
     "t6name": "Industry Outlook",
     "t6role": "Deloitte Financial Advisory"
   },
+  "careers": {
+    "label": "Careers",
+    "heading": "Join Our Team",
+    "subtitle": "Help us build the infrastructure for cross-border deal facilitation.",
+    "role1title": "Mobile Applications Developer",
+    "role1type": "Unpaid · Project-Based",
+    "role1location": "Remote",
+    "role1desc": "Build and maintain our mobile applications for iOS and Android. You'll work on client-facing tools that help institutional partners track deals, receive updates, and manage cross-border transactions on the go.",
+    "role1tag1": "React Native",
+    "role1tag2": "iOS & Android",
+    "role1tag3": "TypeScript",
+    "apply": "Apply Now"
+  },
   "cta": {
     "heading": "Ready to Explore Cross-Border Opportunities?",
     "subtitle": "Start a conversation. No commitment, no minimum deal size required. We'll assess fit and outline next steps in 30 minutes.",
@@ -144,7 +157,7 @@
     "newsletter": "Market Intelligence, Delivered Weekly",
     "newsletterDesc": "KSA-Malaysia corridor insights, regulatory updates, and deal flow intelligence.",
     "subscribe": "Subscribe",
-    "tagline": "Strategic Integration Agency. Bridging opportunity between Saudi Arabia and Malaysia.",
+    "tagline": "Strategic Integration Agency. Cross-border deal facilitation bridging Saudi Arabia and Malaysia. Islamic finance, halal economy, Vision 2030.",
     "motto": "Potential Unlocked",
     "services": "Services",
     "sectors": "Sectors",

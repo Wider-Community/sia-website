@@ -9,7 +9,7 @@ import { BorderBeam } from "@/components/effects/BorderBeam";
 export function CTASection() {
   const { t } = useTranslation();
   return (
-    <section id="contact" className="relative bg-[#151516] overflow-hidden">
+    <section id="contact" aria-labelledby="cta-heading" className="relative bg-[#151516] overflow-hidden">
       <Lamp>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -17,7 +17,7 @@ export function CTASection() {
           transition={{ delay: 0.5, duration: 0.8 }}
           className="text-center max-w-2xl mx-auto"
         >
-          <h2 className="text-section font-serif text-white mb-6">
+          <h2 id="cta-heading" className="text-section font-serif text-white mb-6">
             {t("cta.heading")}
           </h2>
           <p className="text-white/50 text-lg mb-10 font-sans">

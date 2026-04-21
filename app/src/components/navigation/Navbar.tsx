@@ -52,13 +52,15 @@ export function Navbar() {
           <a href="#" className="flex items-center gap-3 shrink-0">
             <img
               src="/images/sia-logo.png"
-              alt="SIA"
+              alt="SIA — Strategic Integration Agency"
+              width="52"
+              height="52"
               className="h-[52px] w-auto"
             />
           </a>
 
           {/* Desktop Nav — centered */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => (
               <div
                 key={link.label}
@@ -142,7 +144,7 @@ export function Navbar() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 bg-charcoal/98 backdrop-blur-xl"
           >
-            <nav className="flex flex-col items-center justify-center h-full gap-6">
+            <nav aria-label="Mobile navigation" className="flex flex-col items-center justify-center h-full gap-6">
               {navLinks.map((link, i) => (
                 <motion.a
                   key={link.label}

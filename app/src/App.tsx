@@ -8,6 +8,7 @@ import {
   HowItWorksSection,
   SectorsSection,
   TestimonialsSection,
+  // CareersSection,
   CTASection,
   Footer,
 } from '@/sections';
@@ -15,7 +16,9 @@ import {
 function App() {
   return (
     <div className="min-h-screen bg-navy">
-      <Navbar />
+      <header>
+        <Navbar />
+      </header>
       <main>
         <HeroSection />
         <GlobeSection />
@@ -25,6 +28,7 @@ function App() {
         <HowItWorksSection />
         <SectorsSection />
         <TestimonialsSection />
+        {/* <CareersSection /> — moved to dedicated careers page later */}
         <CTASection />
       </main>
       <Footer />

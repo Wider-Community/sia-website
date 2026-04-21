@@ -61,7 +61,7 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-6 py-16">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
           <div className="col-span-2">
-            <img src="/images/sia-logo.png" alt="SIA" className="h-10 w-auto mb-4" />
+            <img src="/images/sia-logo.png" alt="SIA — Strategic Integration Agency" width="40" height="40" loading="lazy" className="h-10 w-auto mb-4" />
             <p className="text-sm text-white/35 leading-relaxed mb-6 max-w-xs font-sans">
               {t("footer.tagline")}
             </p>

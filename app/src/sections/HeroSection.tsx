@@ -39,9 +39,11 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden">
+    <section aria-labelledby="hero-heading" className="relative min-h-screen flex flex-col overflow-hidden">
       {/* Background Image */}
       <div
+        role="img"
+        aria-label="Skyline cityscape representing international business and investment"
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url(/images/hero_nyc_skyline.jpg)" }}
       />
@@ -74,6 +76,7 @@ export function HeroSection() {
 
             {/* Headline */}
             <motion.h1
+              id="hero-heading"
               variants={itemVariants}
               className="text-5xl sm:text-6xl lg:text-7xl font-serif font-medium text-white leading-[1.1] mb-6"
             >

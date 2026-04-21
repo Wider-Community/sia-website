@@ -38,7 +38,7 @@ export function ValuePropsSection() {
   const { t } = useTranslation();
 
   return (
-    <section id="services" className="relative bg-navy py-24 lg:py-32">
+    <section id="services" aria-labelledby="services-heading" className="relative bg-navy py-24 lg:py-32">
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16 max-w-2xl mx-auto">
@@ -50,7 +50,7 @@ export function ValuePropsSection() {
           >
             {t("valueProps.label")}
           </motion.p>
-          <h2 className="text-section font-serif text-white mb-6">
+          <h2 id="services-heading" className="text-section font-serif text-white mb-6">
             <TextReveal text={t("valueProps.heading")} />
           </h2>
           <p className="text-white/50 text-lg font-sans">

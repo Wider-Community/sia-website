@@ -29,14 +29,14 @@ export function SectorsSection() {
   const { t } = useTranslation();
 
   return (
-    <section id="sectors" className="relative bg-navy py-24 lg:py-32">
+    <section id="sectors" aria-labelledby="sectors-heading" className="relative bg-navy py-24 lg:py-32">
       <div className="max-w-6xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">
           <p className="text-gold text-sm font-semibold uppercase tracking-widest mb-4 font-sans">
             {t("sectors.label")}
           </p>
-          <h2 className="text-section font-serif text-white mb-4">
+          <h2 id="sectors-heading" className="text-section font-serif text-white mb-4">
             {t("sectors.heading")}
           </h2>
           <p className="text-white/45 text-lg max-w-xl mx-auto font-sans">

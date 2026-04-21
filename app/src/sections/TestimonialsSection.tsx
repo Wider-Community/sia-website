@@ -42,7 +42,7 @@ export function TestimonialsSection() {
   const { t } = useTranslation();
 
   return (
-    <section className="relative bg-navy py-24 overflow-hidden">
+    <section aria-labelledby="testimonials-heading" className="relative bg-navy py-24 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 mb-12">
         <motion.div
           initial={{ opacity: 0 }}
@@ -53,7 +53,7 @@ export function TestimonialsSection() {
           <p className="text-gold text-sm font-semibold uppercase tracking-widest mb-4 font-sans">
             {t("testimonials.label")}
           </p>
-          <h2 className="text-section font-serif text-white">
+          <h2 id="testimonials-heading" className="text-section font-serif text-white">
             {t("testimonials.heading")}
           </h2>
         </motion.div>

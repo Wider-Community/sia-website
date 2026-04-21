@@ -16,7 +16,7 @@ export function HowItWorksSection() {
   const isRtl = i18n.language === "ar";
 
   return (
-    <section id="platform" className="relative bg-[#151516] py-24 lg:py-32">
+    <section id="platform" aria-labelledby="process-heading" className="relative bg-[#151516] py-24 lg:py-32">
       {/* Subtle grid */}
       <div className="absolute inset-0 spotlight-grid opacity-50" />
 
@@ -26,7 +26,7 @@ export function HowItWorksSection() {
           <p className="text-gold text-sm font-semibold uppercase tracking-widest mb-4 font-sans">
             {t("howItWorks.label")}
           </p>
-          <h2 className="text-section font-serif text-white mb-6">
+          <h2 id="process-heading" className="text-section font-serif text-white mb-6">
             {t("howItWorks.heading")}
           </h2>
           <p className="text-white/50 text-lg font-sans">

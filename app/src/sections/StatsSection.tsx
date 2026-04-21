@@ -15,7 +15,7 @@ export function StatsSection() {
   const { t } = useTranslation();
 
   return (
-    <section className="relative bg-navy py-24">
+    <section aria-label="Key statistics" className="relative bg-navy py-24">
       {/* Gold accent line */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
 

@@ -6,5 +6,6 @@ export { StatsSection } from './StatsSection';
 export { HowItWorksSection } from './HowItWorksSection';
 export { SectorsSection } from './SectorsSection';
 export { TestimonialsSection } from './TestimonialsSection';
+export { CareersSection } from './CareersSection';
 export { CTASection } from './CTASection';
 export { Footer } from './Footer';
