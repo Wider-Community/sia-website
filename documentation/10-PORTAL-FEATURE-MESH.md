@@ -2,9 +2,11 @@
 
 ## Software Category
 
-**Deal Flow CRM with Client Portal and Configurable Workflow Engine**
+**Partnership Management Portal with Deal Flow CRM capabilities**
 
-Also known as: B2B Investment Portal, Investor Intake & Deal Management Platform.
+A platform where each partner (investor, company, advisor) has a home base to build their partnership with SIA, access services, track progress on active deals, and achieve their cross-border investment goals. SIA manages the relationship and deal pipeline from the other side.
+
+Not just a request ticketing system — it's each partner's workspace for their KSA-Malaysia corridor activities.
 
 ---
 
@@ -12,101 +14,146 @@ Also known as: B2B Investment Portal, Investor Intake & Deal Management Platform
 
 ```
 Phase 1 (MVP): Hardcoded workflows in frontend, Mujarrad stores data
-Phase 2 (Full): XyOps configures processes, Mujarrad stores data, Tally.so-style dynamic forms
+Phase 2 (Full): XyOps configures processes, Mujarrad stores data, dynamic forms
 ```
 
 ```
-User → Google Login (Mujarrad) → Select request type → Tally-style form → Submit
-    → Dashboard: see all requests + status
-    → Request detail: timeline, documents, signatures
+Partner → Google Login (Mujarrad) → Onboard org → Partner Home
+    → Start new engagement (deal inquiry, partnership setup, consultation)
+    → Track active engagements + progress
+    → Sign documents, upload files
+    → Manage org members
 ```
 
 **MVP principle:** Simple, working, clean. Configure later.
 
 ---
 
-## Modules (Deduplicated)
+## The Partner Experience
+
+Each partner organization gets a workspace where they can:
+
+1. **Build their partnership** — Set up business profile, invite team members, establish their corridor presence
+2. **Benefit from it** — Submit deal inquiries, request services, access SIA's facilitation
+3. **Achieve their goals** — Track engagement progress, sign deals, see results
+
+The portal is partner-centric, not request-centric. The partner's dashboard shows their overall relationship with SIA — not just a list of tickets.
+
+---
+
+## Modules
 
 | # | Module | MVP Scope | Phase 2 | Reference |
 |---|--------|-----------|---------|-----------|
-| **1** | **Authentication** | Google OAuth via Mujarrad. JWT in Zustand + localStorage. Protected routes | Add email/password option | Mujarrad-Frontend (own) |
-| **2** | **Business Profile & Organizations** | Shared org account. Invite members by email → they sign up with Gmail → join same org. All members have equal access. Org profile: company name, registration, country, sector, description | Teams under org with role-based access | — |
-| **3** | **Request Intake (Multi-step)** | Clean multi-step form (Tally-inspired, simplified). 2-4 fields per step, progress bar, smooth transitions. 3 request types hardcoded: Deal Inquiry, Partnership, Consultation | Dynamic form builder. Mujarrad-Frontend upgraded to configurable form engine. Admin creates form sequences | Tally.so (UX inspiration), shadcn Form + Framer Motion |
-| **4** | **Process Stages** | Hardcoded stages per request type. Linear progression. Status stored in Mujarrad | XyOps integration for configurable process definitions. Each step as a workflow node. Branching, parallel stages, conditions | XyOps (own) |
-| **5** | **Status Dashboard** | User sees all org requests in a table. Each shows: type, current stage, progress bar, date submitted. Click to see detail | Filters, search, sort. Kanban view for admin | shadcn-admin (Vite + shadcn) |
-| **6** | **Request Detail & Timeline** | Vertical timeline: every stage change, document upload, signature event. Current stage highlighted. Next action shown | Comments, internal notes (admin-only) | Peppermint (ticket history) |
-| **7** | **Document Management** | Upload files per request. View/download. Tied to specific stage. Org-level document storage | Version history, permission controls per doc | Papermark |
-| **8** | **Digital Signatures** | Sign documents within the platform. Single signer or multi-signer. Signature request as a stage action: SIA uploads doc → user(s) sign → process advances. Audit trail per signature | Signature templates, bulk signing, legally binding with timestamp + IP | Documenso (Next.js + TS, 9k stars, MIT) |
-| **9** | **Notifications** | In-app toasts (sonner, already installed). Email on key events: new signature request, stage change, invitation to org | Configurable templates, digest mode, notification preferences | sonner (installed) |
-| **10** | **Localization (i18n)** | Arabic RTL + English LTR. All UI, form questions, stage labels | Workflow labels bilingual in Mujarrad | react-i18next (already implemented) |
-| **11** | **Audit Trail** | Automatic via Mujarrad node versioning. Every state change, signature, upload logged | Exportable audit report for compliance | Mujarrad versioning (built-in) |
-
-**Removed:** Meeting & Calendar (users meet externally), Admin Workflow Designer (Phase 2 via XyOps), Reporting & Analytics (Phase 2), Process Type Registry (Phase 2 via XyOps).
+| **1** | **Authentication** | Google OAuth via Mujarrad. JWT in Zustand + localStorage. Protected routes | Email/password option | Mujarrad-Frontend (own) |
+| **2** | **Partner Profile & Organization** | Org account with business profile (company name, registration, country, sector, description, logo). Invite members by email → they sign up/login with Gmail → join same org. All members have equal access in MVP | Teams under org with role-based access. Multiple org memberships per user | — |
+| **3** | **Partner Home (Dashboard)** | The partner's central hub. Shows: org profile summary, active engagements with status, pending actions (signatures needed, info requested), recent activity feed | Partnership health score, recommendations, corridor insights feed | shadcn-admin (Vite + shadcn) |
+| **4** | **Engagement Intake (Multi-step form)** | Start a new engagement. Clean multi-step form, 2-4 fields per step, progress bar, Framer Motion transitions. 3 engagement types: Deal Inquiry, Partnership Setup, Consultation | Dynamic form builder via XyOps. Admin creates form sequences per engagement type | Tally.so (UX inspiration), shadcn Form |
+| **5** | **Engagement Pipeline** | Each engagement moves through stages. Hardcoded stages per type in MVP. Partner sees: current stage, progress bar, what's needed next. SIA team advances stages from their side | XyOps-driven configurable pipelines. Branching, parallel stages, conditions, SLA timers | XyOps (own) |
+| **6** | **Engagement Detail & Timeline** | Per-engagement view. Vertical timeline of every event: stage changes, documents uploaded, signatures completed, comments. Current stage highlighted with next action | Internal notes (SIA-only), comments between partner and SIA team | Peppermint (ticket history) |
+| **7** | **Document Management** | Upload/download files per engagement. Documents tied to specific stages. Org-level document vault (shared across engagements: company registration, financials, etc.) | Version history, permission controls per doc, document templates | Papermark |
+| **8** | **Digital Signatures** | Sign documents within the portal. Single or multi-signer. Flow: SIA uploads doc → marks signers → signers get notified → sign → once all sign, document finalized → stage can advance. Audit trail (timestamp, IP, identity) | Signature templates, bulk signing, legally binding certification | Documenso (9k stars, MIT) |
+| **9** | **Notifications** | In-app toasts (sonner). Email on: new signature request, stage advancement, invitation to org, document uploaded by SIA | Configurable templates, digest mode, preferences per user | sonner (installed) |
+| **10** | **Localization (i18n)** | Arabic RTL + English LTR. All UI, form labels, stage names, notifications | Bilingual labels stored in Mujarrad | react-i18next (already implemented) |
+| **11** | **Audit Trail** | Automatic via Mujarrad node versioning. Every action logged: state changes, signatures, uploads, member joins | Exportable compliance report | Mujarrad versioning (built-in) |
 
 ---
 
 ## Organization & Team Model (MVP)
 
 ```
-Organization (shared account)
-├── Owner (whoever created it)
-├── Member (invited via email, signs up with Gmail, same access as owner)
+Partner Organization (shared workspace)
+├── Owner (created the org)
+├── Member (invited, same access)
 ├── Member
 └── Member
 
-All members see the same requests, documents, and org profile.
+All members see: org profile, all engagements, all documents, all signatures.
 No roles in MVP — everyone has equal access.
 ```
 
 **Invitation flow:**
-1. Owner goes to Org Settings → Invite Member
+1. Owner → Org Settings → Invite Member
 2. Enters email address
-3. Invitee receives email with signup/login link
+3. Invitee receives email with link
 4. Invitee signs up or logs in with Gmail
-5. Invitee is automatically added to the org
-6. Both see the same dashboard, requests, documents
+5. Automatically joins the org
+6. Full access to org workspace
+
+---
+
+## Partner Home (Dashboard)
+
+The dashboard is NOT just a table of requests. It's the partner's workspace:
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Welcome back, [Company Name]                       │
+│  Partner since [date] · [sector] · [country]        │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  ⚡ Action Required (2)                             │
+│  ┌──────────────────────────────────────┐           │
+│  │ Sign NDA for Deal #12        [Sign]  │           │
+│  │ Provide financials for P-05  [Upload]│           │
+│  └──────────────────────────────────────┘           │
+│                                                     │
+│  📋 Active Engagements                              │
+│  ┌────────────────────────────────────────────────┐ │
+│  │ Deal Inquiry — Halal Food JV    Stage 3/6  ██░ │ │
+│  │ Partnership Setup               Stage 2/5  █░░ │ │
+│  │ Consultation — FinTech          Completed  ███ │ │
+│  └────────────────────────────────────────────────┘ │
+│                                                     │
+│  📄 Recent Activity                                 │
+│  • SIA uploaded term sheet for Deal #12 — 2h ago    │
+│  • Partnership moved to Due Diligence — 1d ago      │
+│  • You signed NDA for Deal #12 — 3d ago             │
+│                                                     │
+│  [+ Start New Engagement]                           │
+│                                                     │
+│  👥 Team: Omar, Sarah, Ahmed     [Manage Team]     │
+└─────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Signature Flow
 
 ```
-1. SIA team uploads a document to a request (e.g., NDA, term sheet)
-2. SIA marks which users need to sign (one or multiple from the org)
-3. Each signer gets a notification
+1. SIA uploads a document to an engagement (NDA, term sheet, agreement)
+2. SIA selects which org members need to sign (one or multiple)
+3. Each signer sees it in their "Action Required" section + gets email
 4. Signer opens document → reviews → draws/types signature → submits
-5. Once all required signers complete → document is finalized
-6. Signed document with audit trail (timestamp, IP, signer identity) stored
-7. If signature was a stage requirement → process automatically advances
+5. Once all required signers complete → document finalized with audit trail
+6. If signature was a stage gate → engagement automatically advances
 ```
 
 ---
 
-## Multi-Step Form Experience (Tally-inspired, simplified)
+## Multi-Step Form Experience
 
-Clean multi-step form — a few related fields per step, not a wall of inputs. Inspired by Tally.so but kept simple.
+Clean multi-step form for starting new engagements:
 
 ```
-Step 1: Request type selection
-        [Deal Inquiry]  [Partnership]  [Consultation]
+Step 1: Engagement type selection
+        [Deal Inquiry]  [Partnership Setup]  [Consultation]
 
-Step 2: Company details
-        Company name, country, website
+Step 2: Details (varies by type)
+        Sector, deal size, target market / partnership type / topic
 
-Step 3: Request specifics (varies by type)
-        Sector, deal size, target market, etc.
+Step 3: Description + supporting documents
+        Textarea + file upload (optional)
 
-Step 4: Description + documents
-        Textarea + file upload
-
-Step 5: ✓ Confirmation — "Submitted! We'll review within 48 hours."
+Step 4: ✓ Confirmation — "Engagement started! SIA will review within 48 hours."
 ```
 
 - 2-4 fields per step (grouped logically)
 - Progress bar at top
-- Smooth step transitions (Framer Motion)
+- Smooth transitions (Framer Motion)
 - Mobile-friendly
 - Back/Next navigation
+- Company details auto-filled from org profile
 
 ---
 
@@ -114,30 +161,35 @@ Step 5: ✓ Confirmation — "Submitted! We'll review within 48 hours."
 
 | Route | Page | Auth Required |
 |-------|------|--------------|
-| `/` | Landing page (current SIA website) | No |
+| `/` | Landing page (current SIA marketing site) | No |
 | `/login` | Google OAuth login | No |
-| `/onboarding` | Create or join org + business profile setup | Yes |
-| `/dashboard` | Request list + status overview | Yes |
-| `/request/new` | Tally-style intake form | Yes |
-| `/request/:id` | Request detail + timeline + documents + signatures | Yes |
-| `/settings` | Org profile, members, invitations | Yes |
+| `/onboarding` | Create org + business profile setup | Yes |
+| `/home` | Partner Home — dashboard with actions, engagements, activity | Yes |
+| `/engagements/new` | Multi-step form to start new engagement | Yes |
+| `/engagements/:id` | Engagement detail: timeline, documents, signatures | Yes |
+| `/documents` | Org document vault (all docs across engagements) | Yes |
+| `/settings` | Org profile, team members, invitations | Yes |
 
 ---
 
 ## Components Needed (MVP)
 
-| Component | shadcn/ui Components | New or Copy |
-|-----------|---------------------|-------------|
+| Component | shadcn/ui Components | Source |
+|-----------|---------------------|--------|
 | GoogleLoginButton | Button | Copy from Mujarrad-Frontend |
 | AuthStore (Zustand) | — | Copy from Mujarrad-Frontend |
 | ProtectedRoute | — | Copy from Mujarrad-Frontend |
 | OrgOnboarding | Card, Input, Button | New |
+| PartnerHome | Card, Badge, Progress, Table | New |
+| ActionRequired | Card, Badge, Button | New |
+| EngagementCard | Card, Badge, Progress | New |
+| ActivityFeed | — (Framer Motion) | New |
 | MultiStepForm | Input, Select, Textarea, Button, Progress | New |
-| ProcessTypeSelector | Card, Badge | New |
-| RequestList | Table, Badge, Progress | New |
-| RequestDetail | Card, Badge, Separator | New |
+| EngagementTypeSelector | Card, Badge | New |
+| EngagementDetail | Card, Badge, Separator | New |
 | StatusTimeline | — (Framer Motion custom) | New |
 | DocumentUpload | Input, Button, Card | New |
+| DocumentVault | Table, Badge, Button | New |
 | SignatureCanvas | Dialog, Button | New (canvas-based) |
 | SignatureRequest | Card, Badge, Button | New |
 | OrgSettings | Input, Button, Table, Dialog | New |
@@ -146,25 +198,25 @@ Step 5: ✓ Confirmation — "Submitted! We'll review within 48 hours."
 
 ---
 
-## Hardcoded Workflows (MVP)
+## Engagement Pipelines (Hardcoded MVP)
 
 ### Deal Inquiry
 ```
 Submission → SIA Review → Initial Assessment → Documentation & Signatures → In Progress → Completed
 ```
-Form: company, sector, deal type, deal size, target market, description, documents
+Form: sector, deal type (investment/JV/M&A/trade), deal size, target market, description, documents
 
-### Partnership Request
+### Partnership Setup
 ```
-Application → Review → Due Diligence → Documentation & Signatures → Onboarding → Active
+Application → Review → Due Diligence → Documentation & Signatures → Onboarding → Active Partner
 ```
-Form: company, registration, partnership type, expertise areas, track record, references
+Form: partnership type (advisory/referral/co-facilitation), expertise areas, track record, references
 
 ### General Consultation
 ```
-Request Submitted → Under Review → Response Sent → Completed
+Request Submitted → Under Review → Response Delivered → Completed
 ```
-Form: name, company, role, topic, preferred language, message
+Form: topic of interest, preferred language, message
 
 ---
 
@@ -172,25 +224,26 @@ Form: name, company, role, topic, preferred language, message
 
 | What | From | Stars | Stack Match |
 |------|------|-------|-------------|
-| Dashboard shell (sidebar, tables) | satnaing/shadcn-admin | 11.8k | **Exact** (Vite + React + TS + shadcn) |
+| Dashboard shell (sidebar, tables, cards) | satnaing/shadcn-admin | 11.8k | **Exact** (Vite + React + TS + shadcn) |
 | Auth (Google OAuth, store, protected routes) | Mujarrad-Frontend (own) | — | **Exact** |
 | Multi-step form UX | Tally.so | — | UX inspiration (simplified) |
-| Ticket lifecycle (submit → track) | Peppermint | 3.1k | Medium (Next.js) |
+| Engagement lifecycle (submit → track) | Peppermint | 3.1k | Medium (Next.js) |
 | Digital signatures | Documenso | 9k | High (Next.js + TS + Prisma) |
-| Document sharing | Papermark | 6k | High (Next.js + TS) |
-| CRM deal patterns | NextCRM | 579 | High (Next.js + shadcn) |
+| Document sharing/vault | Papermark | 6k | High (Next.js + TS) |
+| CRM deal pipeline patterns | NextCRM | 579 | High (Next.js + shadcn) |
 
 ---
 
 ## Fastest Implementation Path
 
 1. **Auth** — Copy Google OAuth from Mujarrad-Frontend, adapt for Vite
-2. **Routing** — Add react-router-dom, set up pages (landing, login, dashboard, request, settings)
-3. **Org onboarding** — Simple org creation form, store in Mujarrad
-4. **Multi-step form** — Build clean step-based form with Framer Motion transitions (2-4 fields per step)
-5. **3 request types** — Hardcoded form steps per type, submit to Mujarrad API
-6. **Dashboard** — Fetch requests, render with shadcn Table + Badge + Progress
-7. **Request detail** — Timeline + document list + signature status
-8. **Signatures** — Canvas-based signature capture, multi-signer support, PDF embedding
-9. **Invitations** — Invite by email, join org on signup
-10. **Replace CTAs** — All "Schedule a Conversation" → "Get Started" → login flow
+2. **Routing** — Add react-router-dom, set up all pages
+3. **Org onboarding** — Create org + business profile form, store in Mujarrad
+4. **Partner Home** — Action required section + engagement cards + activity feed
+5. **Multi-step form** — Build step-based form with Framer Motion (2-4 fields/step, auto-fill from org profile)
+6. **3 engagement types** — Hardcoded pipelines, submit to Mujarrad API
+7. **Engagement detail** — Timeline + documents + signature status
+8. **Document vault** — Org-level document storage, upload/download per engagement
+9. **Signatures** — Canvas-based capture, multi-signer, stage-gated advancement
+10. **Team invitations** — Invite by email, join org on Gmail signup
+11. **Replace CTAs** — All "Schedule a Conversation" → "Get Started" → login → Partner Home
