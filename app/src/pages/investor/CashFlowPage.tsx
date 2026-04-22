@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useStore, calcMonthlyForecast, calcMonthlyDep, type MonthData } from '@/stores/financialModel'
+import { useStore, calcMonthlyForecast, type MonthData } from '@/stores/financialModel'
 
 const fmt = (n: number) =>
   n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
