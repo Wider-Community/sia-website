@@ -61,6 +61,14 @@
     --input: 240 2% 18%;
     --ring: 43 54% 55%;
     --radius: 0.625rem;
+
+    /* SIA brand raw values */
+    --gold: #C8A951;
+    --gold-dark: #A08838;
+    --charcoal: #1C1C1E;
+    --silver: #C0C0C0;
+    --silver-light: #E8E8E8;
+    --navy: #1A1A1C;
   }
 
   [data-theme="dark"] {
@@ -156,6 +164,9 @@
   .text-balance {
     text-wrap: balance;
   }
+  .animation-paused {
+    animation-play-state: paused;
+  }
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -168,6 +179,21 @@
   }
   .font-sans {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  .text-gold {
+    color: var(--gold);
+  }
+  .bg-gold {
+    background-color: var(--gold);
+  }
+  .text-charcoal {
+    color: var(--charcoal);
+  }
+  .bg-charcoal {
+    background-color: var(--charcoal);
+  }
+  .bg-navy {
+    background-color: var(--navy);
   }
 }
 
@@ -262,13 +288,73 @@
   background-clip: text;
 }
 
-/* ─── Marquee (kept for TrustBar future use) ─── */
+/* ─── Gradient Silver Text ─── */
+.text-gradient-silver {
+  background: linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 50%, #A0A0A0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Glass effect (original) ─── */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Marquee animations ─── */
 @keyframes marquee {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-100%); }
 }
+@keyframes marquee-reverse {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(0%); }
+}
+@keyframes marquee-vertical {
+  0% { transform: translateY(0%); }
+  100% { transform: translateY(-100%); }
+}
 .animate-marquee {
   animation: marquee var(--speed, 40s) linear infinite;
+}
+.animate-marquee-reverse {
+  animation: marquee-reverse var(--speed, 40s) linear infinite;
+}
+.animate-marquee-vertical {
+  animation: marquee-vertical var(--speed, 40s) linear infinite;
+}
+
+/* Marquee pause on hover */
+.marquee-container:hover .animate-marquee,
+.marquee-container:hover .animate-marquee-reverse {
+  animation-play-state: paused;
+}
+
+/* ─── Border beam animation ─── */
+@keyframes border-beam-spin {
+  0% { rotate: 0deg; }
+  100% { rotate: 360deg; }
+}
+
+/* ─── Aurora animation ─── */
+@keyframes aurora {
+  0% { background-position: 50% 50%, 50% 50%; }
+  100% { background-position: 350% 50%, 350% 50%; }
+}
+.animate-aurora {
+  animation: aurora 60s linear infinite;
+}
+
+/* ─── Pulse glow ─── */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
 }
 
 /* ─── Fade In on Scroll ─── */

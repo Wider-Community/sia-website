@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useNavigate } from "react-router-dom";
-import { Settings, LogOut as LogOutIcon } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useStore, calcMonthlyForecast, DEFAULTS, SCENARIOS, SCENARIO_META } from "@/stores/financialModel";
 import { exportToExcel } from "@/utils/excel";
 
