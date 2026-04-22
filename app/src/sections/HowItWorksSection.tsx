@@ -1,5 +1,3 @@
-// Inspired by 21st.dev: anubra266/timeline-animation
-// Scroll-triggered deal lifecycle with animated connecting lines
 import { motion } from "framer-motion";
 import { Search, FileCheck, Puzzle, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -16,77 +14,131 @@ export function HowItWorksSection() {
   const isRtl = i18n.language === "ar";
 
   return (
-    <section id="platform" aria-labelledby="process-heading" className="relative bg-[#151516] py-24 lg:py-32">
-      {/* Subtle grid */}
-      <div className="absolute inset-0 spotlight-grid opacity-50" />
-
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
+    <section
+      id="platform"
+      aria-labelledby="process-heading"
+      className="relative py-20 lg:py-24"
+      style={{ background: "var(--bg)" }}
+    >
+      <div className="max-w-6xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-20 max-w-2xl mx-auto">
-          <p className="text-gold text-sm font-semibold uppercase tracking-widest mb-4 font-sans">
+          <div className="section-label">
             {t("howItWorks.label")}
-          </p>
-          <h2 id="process-heading" className="text-section font-serif text-white mb-6">
+          </div>
+          <h2
+            id="process-heading"
+            className="text-section font-serif mb-6"
+            style={{ color: "var(--text)" }}
+          >
             {t("howItWorks.heading")}
           </h2>
-          <p className="text-white/50 text-lg font-sans">
+          <p className="text-lg font-sans" style={{ color: "var(--text-secondary)" }}>
             {t("howItWorks.subtitle")}
           </p>
         </div>
 
         {/* Timeline */}
         <div className="relative">
-          {/* Vertical line — uses start for RTL support */}
-          <div className="absolute start-[39px] top-0 bottom-0 w-px bg-gradient-to-b from-gold/40 via-gold/20 to-transparent hidden md:block" />
-          {/* Mobile vertical line */}
-          <div className="absolute start-[27px] top-0 bottom-0 w-px bg-gradient-to-b from-gold/30 via-gold/10 to-transparent md:hidden" />
+          {/* Vertical gold line — centered on desktop */}
+          <div
+            className="absolute top-0 bottom-0 hidden md:block"
+            style={{
+              width: "2px",
+              background: "var(--accent)",
+              left: "50%",
+              transform: "translateX(-50%)",
+            }}
+          />
+          {/* Mobile vertical line — left side */}
+          <div
+            className="absolute top-0 bottom-0 md:hidden"
+            style={{
+              width: "2px",
+              background: "var(--accent)",
+              insetInlineStart: "19px",
+            }}
+          />
 
-          <div className="space-y-12">
-            {steps.map((step, i) => (
-              <motion.div
-                key={step.step}
-                initial={{ opacity: 0, x: isRtl ? 20 : -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ delay: i * 0.2, duration: 0.6 }}
-                className="flex gap-4 md:gap-8 items-start"
-              >
-                {/* Step indicator */}
-                <div className="relative flex-shrink-0">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ delay: i * 0.2 + 0.3, type: "spring" }}
-                    className="w-14 h-14 md:w-20 md:h-20 rounded-xl md:rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center relative z-10"
-                  >
-                    <step.icon className="w-6 h-6 md:w-8 md:h-8 text-gold" />
-                  </motion.div>
-                  {/* Pulse ring */}
-                  <motion.div
-                    animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
-                    transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
-                    className="absolute inset-0 rounded-2xl border border-gold/20"
-                  />
-                </div>
+          <div className="space-y-12 md:space-y-16">
+            {steps.map((step, i) => {
+              const isLeft = i % 2 === 0;
 
-                {/* Content */}
-                <div className="flex-1 pb-8">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-gold/40 text-sm font-mono">{step.step}</span>
-                    <span className="text-[10px] font-sans text-white/30 uppercase tracking-wider px-2 py-0.5 rounded-full border border-white/10">
-                      {t(step.durationKey)}
-                    </span>
+              return (
+                <motion.div
+                  key={step.step}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ delay: i * 0.15, duration: 0.6 }}
+                  className={`relative flex items-start gap-4 md:items-center ${
+                    isLeft ? "md:flex-row" : "md:flex-row-reverse"
+                  }`}
+                >
+                  {/* Mobile layout: icon + content in a row */}
+                  {/* Desktop layout: card — circle — card, alternating sides */}
+
+                  {/* Card content */}
+                  <div className="flex-1 md:hidden">
+                    <div className="glass-card p-6 ms-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <step.icon className="w-5 h-5" style={{ color: "var(--accent)" }} />
+                        <span
+                          className="text-[10px] font-sans uppercase tracking-wider px-2 py-0.5 rounded-full"
+                          style={{ color: "var(--text-tertiary)", border: "1px solid var(--border)" }}
+                        >
+                          {t(step.durationKey)}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-serif font-semibold mb-2" style={{ color: "var(--text)" }}>
+                        {t(step.titleKey)}
+                      </h3>
+                      <p className="text-sm leading-relaxed font-sans" style={{ color: "var(--text-secondary)" }}>
+                        {t(step.descKey)}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-serif font-semibold text-white mb-3">
-                    {t(step.titleKey)}
-                  </h3>
-                  <p className="text-white/45 text-sm leading-relaxed max-w-lg font-sans">
-                    {t(step.descKey)}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+
+                  {/* Desktop card — left or right side */}
+                  <div className="hidden md:block flex-1">
+                    <div className={`glass-card p-6 ${isLeft ? "me-8" : "ms-8"}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <step.icon className="w-5 h-5" style={{ color: "var(--accent)" }} />
+                        <span
+                          className="text-[10px] font-sans uppercase tracking-wider px-2 py-0.5 rounded-full"
+                          style={{ color: "var(--text-tertiary)", border: "1px solid var(--border)" }}
+                        >
+                          {t(step.durationKey)}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-serif font-semibold mb-3" style={{ color: "var(--text)" }}>
+                        {t(step.titleKey)}
+                      </h3>
+                      <p className="text-sm leading-relaxed font-sans" style={{ color: "var(--text-secondary)" }}>
+                        {t(step.descKey)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step circle — centered on the timeline */}
+                  <div className="flex-shrink-0 relative z-10">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true, margin: "-100px" }}
+                      transition={{ delay: i * 0.15 + 0.2, type: "spring" }}
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+                      style={{ background: "var(--accent)", color: "#fff" }}
+                    >
+                      {step.step}
+                    </motion.div>
+                  </div>
+
+                  {/* Empty spacer for the opposite side on desktop */}
+                  <div className="hidden md:block flex-1" />
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </div>

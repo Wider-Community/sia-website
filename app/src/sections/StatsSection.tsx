@@ -1,5 +1,3 @@
-// Inspired by 21st.dev: reuno-ui/animated-number
-// Animated statistics with spring-physics counters
 import { motion } from "framer-motion";
 import { AnimatedCounter } from "@/components/effects/AnimatedCounter";
 import { useTranslation } from "react-i18next";
@@ -15,12 +13,13 @@ export function StatsSection() {
   const { t } = useTranslation();
 
   return (
-    <section aria-label="Key statistics" className="relative bg-navy py-24">
-      {/* Gold accent line */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
-
+    <section
+      aria-label="Key statistics"
+      className="relative py-20 lg:py-24"
+      style={{ background: "var(--bg)" }}
+    >
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.labelKey}
@@ -28,9 +27,9 @@ export function StatsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ delay: i * 0.1, duration: 0.6 }}
-              className="text-center"
+              className="glass-card p-6 text-center"
             >
-              <div className="text-stat font-serif font-bold text-white mb-2">
+              <div className="text-stat font-bold text-gradient-gold mb-2">
                 <AnimatedCounter
                   value={stat.value}
                   prefix={stat.prefix}
@@ -38,10 +37,16 @@ export function StatsSection() {
                   duration={2}
                 />
               </div>
-              <div className="text-sm font-semibold text-white/70 mb-1 font-sans">
+              <div
+                className="text-sm font-semibold uppercase tracking-wider font-sans mb-1"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 {t(stat.labelKey)}
               </div>
-              <div className="text-xs text-white/30 font-sans">
+              <div
+                className="text-xs font-sans"
+                style={{ color: "var(--text-tertiary)" }}
+              >
                 {t(stat.descKey)}
               </div>
             </motion.div>

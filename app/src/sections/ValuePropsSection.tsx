@@ -1,16 +1,10 @@
-// Inspired by 21st.dev: aceternity/3d-card-effect + easemize/spotlight-card
-// 3D perspective cards with spotlight tracking for value propositions
 import { motion } from "framer-motion";
 import { Handshake, Shield, Brain } from "lucide-react";
-import { SpotlightCard } from "@/components/effects/SpotlightCard";
-import { ThreeDCard, ThreeDCardBody, ThreeDCardItem } from "@/components/effects/ThreeDCard";
-import { TextReveal } from "@/components/effects/TextReveal";
 import { useTranslation } from "react-i18next";
 
 const cards = [
   {
     icon: Handshake,
-    color: "rgba(200, 169, 81, 0.15)",
     titleKey: "valueProps.card1title",
     descKey: "valueProps.card1desc",
     statKey: "valueProps.card1stat",
@@ -18,7 +12,6 @@ const cards = [
   },
   {
     icon: Shield,
-    color: "rgba(200, 169, 81, 0.12)",
     titleKey: "valueProps.card2title",
     descKey: "valueProps.card2desc",
     statKey: "valueProps.card2stat",
@@ -26,7 +19,6 @@ const cards = [
   },
   {
     icon: Brain,
-    color: "rgba(200, 169, 81, 0.10)",
     titleKey: "valueProps.card3title",
     descKey: "valueProps.card3desc",
     statKey: "valueProps.card3stat",
@@ -38,22 +30,31 @@ export function ValuePropsSection() {
   const { t } = useTranslation();
 
   return (
-    <section id="services" aria-labelledby="services-heading" className="relative bg-navy py-24 lg:py-32">
+    <section
+      id="services"
+      aria-labelledby="services-heading"
+      className="relative py-20 lg:py-24"
+      style={{ background: "var(--bg)" }}
+    >
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16 max-w-2xl mx-auto">
-          <motion.p
+          <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-100px" }}
-            className="text-gold text-sm font-semibold uppercase tracking-widest mb-4 font-sans"
+            className="section-label"
           >
             {t("valueProps.label")}
-          </motion.p>
-          <h2 id="services-heading" className="text-section font-serif text-white mb-6">
-            <TextReveal text={t("valueProps.heading")} />
+          </motion.div>
+          <h2
+            id="services-heading"
+            className="text-section font-serif mb-6"
+            style={{ color: "var(--text)" }}
+          >
+            {t("valueProps.heading")}
           </h2>
-          <p className="text-white/50 text-lg font-sans">
+          <p className="text-lg font-sans" style={{ color: "var(--text-secondary)" }}>
             {t("valueProps.subtitle")}
           </p>
         </div>
@@ -67,44 +68,43 @@ export function ValuePropsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ delay: i * 0.15, duration: 0.6 }}
+              className="glass-card glass-card-accent p-6"
             >
-              <ThreeDCard>
-                <SpotlightCard
-                  spotlightColor={card.color}
-                  className="h-full"
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}
+              >
+                <card.icon className="w-6 h-6" style={{ color: "var(--accent)" }} />
+              </div>
+
+              <h3
+                className="text-xl font-serif font-semibold mb-3"
+                style={{ color: "var(--text)" }}
+              >
+                {t(card.titleKey)}
+              </h3>
+
+              <p
+                className="text-sm leading-relaxed font-sans mb-6"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {t(card.descKey)}
+              </p>
+
+              <div
+                className="pt-4"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
+                <div className="text-2xl font-serif font-bold text-gradient-gold">
+                  {t(card.statKey)}
+                </div>
+                <div
+                  className="text-xs font-sans mt-1"
+                  style={{ color: "var(--text-tertiary)" }}
                 >
-                  <ThreeDCardBody className="space-y-6">
-                    <ThreeDCardItem translateZ={40}>
-                      <div className="w-12 h-12 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
-                        <card.icon className="w-6 h-6 text-gold" />
-                      </div>
-                    </ThreeDCardItem>
-
-                    <ThreeDCardItem translateZ={30}>
-                      <h3 className="text-xl font-serif font-semibold text-white">
-                        {t(card.titleKey)}
-                      </h3>
-                    </ThreeDCardItem>
-
-                    <ThreeDCardItem translateZ={20}>
-                      <p className="text-white/50 text-sm leading-relaxed font-sans">
-                        {t(card.descKey)}
-                      </p>
-                    </ThreeDCardItem>
-
-                    <ThreeDCardItem translateZ={50}>
-                      <div className="pt-4 border-t border-white/[0.06]">
-                        <div className="text-2xl font-serif font-bold text-gradient-gold">
-                          {t(card.statKey)}
-                        </div>
-                        <div className="text-xs text-white/30 font-sans mt-1">
-                          {t(card.statLabelKey)}
-                        </div>
-                      </div>
-                    </ThreeDCardItem>
-                  </ThreeDCardBody>
-                </SpotlightCard>
-              </ThreeDCard>
+                  {t(card.statLabelKey)}
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
