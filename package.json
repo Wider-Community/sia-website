@@ -1,5 +1,13 @@
 {
+  "name": "sia-website",
+  "private": true,
+  "scripts": {
+    "install:app": "cd app && npm install",
+    "build": "cd app && npm install && npm run build",
+    "start": "cd app && npx serve dist -s -l ${PORT:-10000}",
+    "preview": "cd app && npx vite preview --port 10000 --host"
+  },
   "dependencies": {
-    "framer-motion": "^12.38.0"
+    "serve": "^14.2.6"
   }
 }
