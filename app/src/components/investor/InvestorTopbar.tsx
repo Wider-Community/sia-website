@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useNavigate } from "react-router-dom";
+import { Settings, LogOut as LogOutIcon } from "lucide-react";
 import { useStore, calcMonthlyForecast, DEFAULTS, SCENARIOS, SCENARIO_META } from "@/stores/financialModel";
 import { exportToExcel } from "@/utils/excel";
 
@@ -101,7 +102,7 @@ export function InvestorTopbar({ isAdmin, onLogin, onLogout }: InvestorTopbarPro
         </span>
         {isAdmin && (
           <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded" style={{ backgroundColor: "var(--accent)", color: "#1a1a1a" }}>
-            Admin
+            Control Panel
           </span>
         )}
       </div>
@@ -181,19 +182,15 @@ export function InvestorTopbar({ isAdmin, onLogin, onLogout }: InvestorTopbarPro
         )}
 
         {divider}
-        {/* Admin toggle */}
+        {/* Control Panel toggle */}
         <button
           onClick={isAdmin ? onLogout : onLogin}
-          className={isAdmin ? tbBtnPrimary : tbBtn}
+          className={`${isAdmin ? tbBtnPrimary : tbBtn} gap-2`}
           style={!isAdmin ? { color: "var(--text-secondary)" } : undefined}
-          title={isAdmin ? "Exit admin mode" : "Admin Login"}
+          title={isAdmin ? "Exit Control Panel" : "Control Panel"}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            {isAdmin
-              ? <><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>
-              : <><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></>
-            }
-          </svg>
+          <Settings className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">{isAdmin ? "Exit Control Panel" : "Control Panel"}</span>
         </button>
 
         <ThemeToggle />
