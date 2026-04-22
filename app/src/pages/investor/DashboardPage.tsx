@@ -8,9 +8,6 @@ import {
   calcBreakevenMonth,
   calcPeakDeficit,
   calcTierSubsAtMonth,
-  DEFAULTS,
-  SCENARIOS,
-  SCENARIO_META,
 } from "@/stores/financialModel";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -187,31 +184,6 @@ export function DashboardPage() {
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
-      </div>
-
-      {/* Scenario Presets */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="section-label">Scenario Presets</div>
-        <button
-          onClick={() => { if (window.confirm("Reset all inputs to defaults?")) store.set(DEFAULTS); }}
-          className="reset-btn px-4 py-2 text-xs font-medium rounded-lg border transition-colors"
-          style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
-        >
-          Reset to Defaults
-        </button>
-      </div>
-      <div className="scenario-selector grid grid-cols-3 gap-3 mb-8">
-        {Object.entries(SCENARIO_META).map(([key, meta]) => (
-          <button
-            key={key}
-            onClick={() => store.set(SCENARIOS[key as keyof typeof SCENARIOS])}
-            className="glass-card p-4 text-left transition-all hover:scale-[1.02]"
-            style={{ borderLeft: `3px solid ${meta.color}` }}
-          >
-            <div className="text-sm font-semibold" style={{ color: meta.color }}>{meta.label}</div>
-            <div className="text-xs mt-1" style={{ color: "var(--text-tertiary)" }}>{meta.description}</div>
-          </button>
-        ))}
       </div>
 
       {/* Interactive Sliders */}
