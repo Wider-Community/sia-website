@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { KpiCard } from "@/components/investor/KpiCard";
 import { ChartCard } from "@/components/investor/ChartCard";
+import { Hint } from "@/components/investor/Hint";
 import {
   useStore,
   calcMonthlyForecast,
@@ -97,18 +98,18 @@ export function DashboardPage() {
   }));
 
   const mainKpis = [
-    { label: "Y1 Revenue", value: fmt(y1Revenue), trend: fmt(y1Revenue), trendUp: y1Revenue > 0 },
-    { label: "Net Profit", value: fmt(y1Net), trend: y1Net >= 0 ? "Profitable" : "Loss", trendUp: y1Net >= 0 },
-    { label: "Net Margin", value: pct(netMargin), trend: netMargin >= 0 ? "Healthy" : "Negative", trendUp: netMargin >= 0 },
-    { label: "Gross Margin", value: pct(grossMargin), trend: grossMargin >= 50 ? "Strong" : "Low", trendUp: grossMargin >= 50 },
-    { label: "Breakeven Month", value: beMonth ? `Month ${beMonth}` : "N/A", trend: beMonth && beMonth <= 12 ? "Within Y1" : "Beyond Y1", trendUp: beMonth !== null && beMonth <= 12 },
-    { label: "ROI", value: pct(roi), trend: roi >= 100 ? "Positive" : "Below 100%", trendUp: roi >= 100 },
+    { label: "Y1 Revenue", hint: "y1Revenue", value: fmt(y1Revenue), trend: fmt(y1Revenue), trendUp: y1Revenue > 0 },
+    { label: "Net Profit", hint: "netProfit", value: fmt(y1Net), trend: y1Net >= 0 ? "Profitable" : "Loss", trendUp: y1Net >= 0 },
+    { label: "Net Margin", hint: "netMargin", value: pct(netMargin), trend: netMargin >= 0 ? "Healthy" : "Negative", trendUp: netMargin >= 0 },
+    { label: "Gross Margin", hint: "grossMargin", value: pct(grossMargin), trend: grossMargin >= 50 ? "Strong" : "Low", trendUp: grossMargin >= 50 },
+    { label: "Breakeven Month", hint: "breakevenMonth", value: beMonth ? `Month ${beMonth}` : "N/A", trend: beMonth && beMonth <= 12 ? "Within Y1" : "Beyond Y1", trendUp: beMonth !== null && beMonth <= 12 },
+    { label: "ROI", hint: "roi", value: pct(roi), trend: roi >= 100 ? "Positive" : "Below 100%", trendUp: roi >= 100 },
   ];
 
   const secondaryKpis = [
-    { label: "Peak Funding Deficit", value: fmt(peakDef), trend: peakDef < 0 ? "Funding needed" : "Self-funded", trendUp: peakDef >= 0 },
-    { label: "Subscription MRR", value: fmt(monthlySubMRR), trend: pct(subCoverage) + " cost coverage", trendUp: subCoverage >= 50 },
-    { label: "Y2 Revenue Projection", value: fmt(y2Revenue), trend: y1Revenue ? pct(((y2Revenue - y1Revenue) / y1Revenue) * 100) + " YoY" : "N/A", trendUp: y2Revenue > y1Revenue },
+    { label: "Peak Funding Deficit", hint: "peakFundingDeficit", value: fmt(peakDef), trend: peakDef < 0 ? "Funding needed" : "Self-funded", trendUp: peakDef >= 0 },
+    { label: "Subscription MRR", hint: "subscriptionMRR", value: fmt(monthlySubMRR), trend: pct(subCoverage) + " cost coverage", trendUp: subCoverage >= 50 },
+    { label: "Y2 Revenue Projection", hint: "y2Revenue", value: fmt(y2Revenue), trend: y1Revenue ? pct(((y2Revenue - y1Revenue) / y1Revenue) * 100) + " YoY" : "N/A", trendUp: y2Revenue > y1Revenue },
   ];
 
   return (
@@ -117,15 +118,15 @@ export function DashboardPage() {
 
       {/* Main KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {mainKpis.map((kpi) => (
-          <KpiCard key={kpi.label} {...kpi} />
+        {mainKpis.map(({ hint, ...kpi }) => (
+          <KpiCard key={kpi.label} {...kpi} label={<Hint term={hint}>{kpi.label}</Hint>} />
         ))}
       </div>
 
       {/* Secondary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {secondaryKpis.map((kpi) => (
-          <KpiCard key={kpi.label} {...kpi} />
+        {secondaryKpis.map(({ hint, ...kpi }) => (
+          <KpiCard key={kpi.label} {...kpi} label={<Hint term={hint}>{kpi.label}</Hint>} />
         ))}
       </div>
 
@@ -217,44 +218,45 @@ export function DashboardPage() {
       <div className="glass-card p-6 space-y-6">
         <div className="section-label">Model Parameters</div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          <SliderRow label="Deals per Year" value={store.dealsPerYear} min={0} max={100} step={1} display={String(store.dealsPerYear)} onChange={(v) => set({ dealsPerYear: v })} />
-          <SliderRow label="Avg Deal Value" value={store.avgDealValue} min={500000} max={20000000} step={100000} display={fmt(store.avgDealValue)} onChange={(v) => set({ avgDealValue: v })} />
-          <SliderRow label="Commission Rate" value={store.commissionRate} min={0} max={10} step={0.1} display={pct(store.commissionRate)} onChange={(v) => set({ commissionRate: v })} />
-          <SliderRow label="Deal Ramp-Up Months" value={store.dealRampUpMonths} min={1} max={12} step={1} display={`${store.dealRampUpMonths} mo`} onChange={(v) => set({ dealRampUpMonths: v })} />
-          <SliderRow label="Revenue Growth Rate" value={store.revenueGrowthRate} min={0} max={50} step={1} display={pct(store.revenueGrowthRate)} onChange={(v) => set({ revenueGrowthRate: v })} />
-          <SliderRow label="Starting Cash" value={store.startingCash} min={0} max={2000000} step={10000} display={fmt(store.startingCash)} onChange={(v) => set({ startingCash: v })} />
-          <SliderRow label="Tax Rate" value={store.taxRate} min={0} max={50} step={1} display={pct(store.taxRate)} onChange={(v) => set({ taxRate: v })} />
-          <SliderRow label="COGS per Deal" value={store.cogsPerDeal} min={0} max={50000} step={500} display={fmt(store.cogsPerDeal)} onChange={(v) => set({ cogsPerDeal: v })} />
+          <SliderRow label="Deals per Year" hintKey="dealsPerYear" value={store.dealsPerYear} min={0} max={100} step={1} display={String(store.dealsPerYear)} onChange={(v) => set({ dealsPerYear: v })} />
+          <SliderRow label="Avg Deal Value" hintKey="avgDealValue" value={store.avgDealValue} min={500000} max={20000000} step={100000} display={fmt(store.avgDealValue)} onChange={(v) => set({ avgDealValue: v })} />
+          <SliderRow label="Commission Rate" hintKey="commissionRate" value={store.commissionRate} min={0} max={10} step={0.1} display={pct(store.commissionRate)} onChange={(v) => set({ commissionRate: v })} />
+          <SliderRow label="Deal Ramp-Up Months" hintKey="dealRampUpMonths" value={store.dealRampUpMonths} min={1} max={12} step={1} display={`${store.dealRampUpMonths} mo`} onChange={(v) => set({ dealRampUpMonths: v })} />
+          <SliderRow label="Revenue Growth Rate" hintKey="revenueGrowthRate" value={store.revenueGrowthRate} min={0} max={50} step={1} display={pct(store.revenueGrowthRate)} onChange={(v) => set({ revenueGrowthRate: v })} />
+          <SliderRow label="Starting Cash" hintKey="startingCash" value={store.startingCash} min={0} max={2000000} step={10000} display={fmt(store.startingCash)} onChange={(v) => set({ startingCash: v })} />
+          <SliderRow label="Tax Rate" hintKey="taxRate" value={store.taxRate} min={0} max={50} step={1} display={pct(store.taxRate)} onChange={(v) => set({ taxRate: v })} />
+          <SliderRow label="COGS per Deal" hintKey="cogsPerDeal" value={store.cogsPerDeal} min={0} max={50000} step={500} display={fmt(store.cogsPerDeal)} onChange={(v) => set({ cogsPerDeal: v })} />
         </div>
 
         {/* Toggle switches */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
-          <ToggleRow label="Subscription Revenue" active={store.subRevenueMultiplier > 0} onChange={(on) => set({ subRevenueMultiplier: on ? 100 : 0 })} />
-          <ToggleRow label="Add-on Revenue" active={store.addOnRevenueMultiplier > 0} onChange={(on) => set({ addOnRevenueMultiplier: on ? 100 : 0 })} />
+          <ToggleRow label="Subscription Revenue" hintKey="subRevenueMultiplier" active={store.subRevenueMultiplier > 0} onChange={(on) => set({ subRevenueMultiplier: on ? 100 : 0 })} />
+          <ToggleRow label="Add-on Revenue" hintKey="addOnRevenueMultiplier" active={store.addOnRevenueMultiplier > 0} onChange={(on) => set({ addOnRevenueMultiplier: on ? 100 : 0 })} />
         </div>
       </div>
     </div>
   );
 }
 
-function SliderRow({ label, value, min, max, step, display, onChange }: {
-  label: string; value: number; min: number; max: number; step: number; display: string; onChange: (v: number) => void;
+function SliderRow({ label, hintKey, value, min, max, step, display, onChange }: {
+  label: string; hintKey: string; value: number; min: number; max: number; step: number; display: string; onChange: (v: number) => void;
 }) {
+  const fill = ((value - min) / (max - min)) * 100;
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>{label}</span>
+        <span className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}><Hint term={hintKey}>{label}</Hint></span>
         <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>{display}</span>
       </div>
-      <input type="range" className="gold-slider w-full" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      <input type="range" className="gold-slider w-full" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} style={{ '--fill': `${fill}%` } as React.CSSProperties} />
     </div>
   );
 }
 
-function ToggleRow({ label, active, onChange }: { label: string; active: boolean; onChange: (on: boolean) => void }) {
+function ToggleRow({ label, hintKey, active, onChange }: { label: string; hintKey: string; active: boolean; onChange: (on: boolean) => void }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>{label}</span>
+      <span className="text-sm font-medium" style={{ color: "var(--text)" }}><Hint term={hintKey}>{label}</Hint></span>
       <button
         onClick={() => onChange(!active)}
         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"

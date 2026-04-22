@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KpiCardProps {
-  label: string;
+  label: ReactNode;
   value: string;
   trend: string;
   trendUp: boolean;

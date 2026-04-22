@@ -346,7 +346,18 @@
 }
 
 /* ─── Slider Inputs ─── */
+.gold-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) var(--fill, 50%), var(--border) var(--fill, 50%));
+  outline: none;
+  cursor: pointer;
+}
 .gold-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
   appearance: none;
   width: 16px;
   height: 16px;
@@ -354,8 +365,18 @@
   background: var(--accent);
   cursor: pointer;
   box-shadow: 0 0 8px var(--accent-glow);
+  border: 2px solid var(--surface);
 }
-.gold-slider::-webkit-slider-runnable-track {
+.gold-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--accent-glow);
+  border: 2px solid var(--surface);
+}
+.gold-slider::-moz-range-track {
   height: 4px;
   border-radius: 2px;
   background: linear-gradient(to right, var(--accent) var(--fill, 50%), var(--border) var(--fill, 50%));
