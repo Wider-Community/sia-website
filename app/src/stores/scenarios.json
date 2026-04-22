@@ -1,0 +1,89 @@
+{
+  "conservative": {
+    "label": "Conservative",
+    "description": "10 deals",
+    "color": "#64748b",
+    "params": {
+      "dealsPerYear": 10,
+      "avgDealValue": 500000,
+      "commissionRate": 2,
+      "dealSuccessRate": 80,
+      "revenueGrowthRate": 8,
+      "dealRampUpMonths": 4,
+      "startingCash": 50000,
+      "taxRate": 24,
+      "cogsPerDeal": 2000,
+      "subRevenueMultiplier": 100,
+      "addOnRevenueMultiplier": 100
+    },
+    "subTiers": [
+      { "name": "Access", "price": 450, "subscribers": 5, "churnRate": 30, "newSubsPerMonth": 2 },
+      { "name": "Active", "price": 900, "subscribers": 3, "churnRate": 50, "newSubsPerMonth": 1 },
+      { "name": "Premium", "price": 2500, "subscribers": 1, "churnRate": 60, "newSubsPerMonth": 1 }
+    ],
+    "addOns": [
+      { "name": "Data Licensing", "price": 2000, "quantity": 2 },
+      { "name": "Due Diligence Advisory", "price": 3000, "quantity": 3 },
+      { "name": "Deal Structuring Consulting", "price": 5000, "quantity": 1 },
+      { "name": "Training & Certification", "price": 1500, "quantity": 4 }
+    ]
+  },
+  "base": {
+    "label": "Base Case",
+    "description": "25 deals",
+    "color": "#1D9E75",
+    "params": {
+      "dealsPerYear": 25,
+      "avgDealValue": 1000000,
+      "commissionRate": 2,
+      "dealSuccessRate": 70,
+      "revenueGrowthRate": 15,
+      "dealRampUpMonths": 3,
+      "startingCash": 50000,
+      "taxRate": 24,
+      "cogsPerDeal": 2500,
+      "subRevenueMultiplier": 100,
+      "addOnRevenueMultiplier": 100
+    },
+    "subTiers": [
+      { "name": "Access", "price": 450, "subscribers": 15, "churnRate": 30, "newSubsPerMonth": 5 },
+      { "name": "Active", "price": 900, "subscribers": 10, "churnRate": 50, "newSubsPerMonth": 3 },
+      { "name": "Premium", "price": 3500, "subscribers": 5, "churnRate": 60, "newSubsPerMonth": 2 }
+    ],
+    "addOns": [
+      { "name": "Data Licensing", "price": 2000, "quantity": 3 },
+      { "name": "Due Diligence Advisory", "price": 3000, "quantity": 6 },
+      { "name": "Deal Structuring Consulting", "price": 5000, "quantity": 2 },
+      { "name": "Training & Certification", "price": 1500, "quantity": 8 }
+    ]
+  },
+  "optimistic": {
+    "label": "Optimistic",
+    "description": "50 deals",
+    "color": "#6B21A8",
+    "params": {
+      "dealsPerYear": 50,
+      "avgDealValue": 2000000,
+      "commissionRate": 2,
+      "dealSuccessRate": 60,
+      "revenueGrowthRate": 20,
+      "dealRampUpMonths": 2,
+      "startingCash": 500000,
+      "taxRate": 24,
+      "cogsPerDeal": 3000,
+      "subRevenueMultiplier": 100,
+      "addOnRevenueMultiplier": 100
+    },
+    "subTiers": [
+      { "name": "Access", "price": 450, "subscribers": 25, "churnRate": 30, "newSubsPerMonth": 8 },
+      { "name": "Active", "price": 900, "subscribers": 15, "churnRate": 50, "newSubsPerMonth": 5 },
+      { "name": "Premium", "price": 2500, "subscribers": 10, "churnRate": 60, "newSubsPerMonth": 2 }
+    ],
+    "addOns": [
+      { "name": "Data Licensing", "price": 2000, "quantity": 4 },
+      { "name": "Due Diligence Advisory", "price": 3000, "quantity": 10 },
+      { "name": "Deal Structuring Consulting", "price": 5000, "quantity": 5 },
+      { "name": "Training & Certification", "price": 1500, "quantity": 12 }
+    ]
+  }
+}
