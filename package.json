@@ -8,6 +8,11 @@
     "preview": "cd app && npx vite preview --port 10000 --host"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.0",
+    "hono": "^4.12.15",
     "serve": "^14.2.6"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1036.0"
   }
 }

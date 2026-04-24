@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import Uppy from "@uppy/core";
-import Tus from "@uppy/tus";
+import { useRef, useState, useCallback } from "react";
 import { useCreate } from "@refinedev/core";
 import { Button } from "@/components/ui/button";
 import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 
-const TUS_ENDPOINT = import.meta.env.VITE_TUS_ENDPOINT ?? "http://localhost:1080/files/";
+const UPLOAD_API = import.meta.env.VITE_UPLOAD_API ?? "/api";
 
 interface FileUploaderProps {
   organizationId: string;
@@ -21,79 +19,79 @@ interface UploadFile {
   error?: string;
 }
 
+function generateId(): string {
+  return `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function FileUploader({ organizationId, onUploadComplete }: FileUploaderProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const uppyRef = useRef<Uppy | null>(null);
   const { mutate: createFileRecord } = useCreate();
 
-  useEffect(() => {
-    const uppy = new Uppy({
-      restrictions: {
-        maxFileSize: 50 * 1024 * 1024, // 50MB
-        allowedFileTypes: [".pdf", ".docx", ".xlsx", ".pptx", ".doc", ".xls", ".ppt"],
-      },
-      autoProceed: true,
-    });
+  const processFile = useCallback(async (file: File) => {
+    const fileId = generateId();
+    setFiles((prev) => [
+      ...prev,
+      { id: fileId, name: file.name, size: file.size, progress: 0, status: "uploading" },
+    ]);
 
-    uppy.use(Tus, {
-      endpoint: TUS_ENDPOINT,
-      chunkSize: 5 * 1024 * 1024,
-      retryDelays: [0, 1000, 3000, 5000],
-    });
+    try {
+      // Upload to R2 via upload server with XHR for progress tracking
+      const r2Key = await new Promise<string>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const url = `${UPLOAD_API}/upload?orgId=${encodeURIComponent(organizationId)}&fileName=${encodeURIComponent(file.name)}`;
 
-    uppy.on("file-added", (file) => {
-      setFiles((prev) => [
-        ...prev,
-        { id: file.id, name: file.name ?? "unknown", size: file.size ?? 0, progress: 0, status: "uploading" },
-      ]);
-    });
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, progress: pct } : f)));
+          }
+        });
 
-    uppy.on("upload-progress", (file, progress) => {
-      if (!file) return;
-      const pct = progress.bytesTotal ? Math.round((progress.bytesUploaded / progress.bytesTotal) * 100) : 0;
-      setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, progress: pct } : f)));
-    });
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data.key);
+          } else {
+            reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+          }
+        });
 
-    uppy.on("upload-success", (file, response) => {
-      if (!file) return;
-      setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, progress: 100, status: "complete" } : f)));
+        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+        xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
 
-      createFileRecord({
-        resource: "files",
-        values: {
-          name: file.name,
-          mimeType: file.type,
-          size: file.size,
-          r2ObjectKey: response.uploadURL ?? "",
-          uploadedBy: "user-1",
-          organizationId,
-        },
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+        xhr.send(file);
       });
 
-      onUploadComplete?.();
-    });
+      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, progress: 100, status: "complete" } : f)));
 
-    uppy.on("upload-error", (file, error) => {
-      if (!file) return;
-      setFiles((prev) =>
-        prev.map((f) => (f.id === file.id ? { ...f, status: "error", error: error.message } : f)),
+      createFileRecord(
+        {
+          resource: "files",
+          values: {
+            name: file.name,
+            mimeType: file.type,
+            size: file.size,
+            r2ObjectKey: r2Key,
+            uploadedBy: "user-1",
+            organizationId,
+          },
+        },
+        { onSuccess: () => onUploadComplete?.() },
       );
-    });
-
-    uppyRef.current = uppy;
-    return () => { uppy.destroy(); };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status: "error", error: msg } : f)));
+    }
   }, [organizationId, createFileRecord, onUploadComplete]);
 
   const handleFiles = (fileList: FileList | null) => {
-    if (!fileList || !uppyRef.current) return;
+    if (!fileList) return;
     for (const file of Array.from(fileList)) {
-      try {
-        uppyRef.current.addFile({ name: file.name, type: file.type, data: file });
-      } catch (err) {
-        console.error("Failed to add file:", err);
-      }
+      processFile(file);
     }
   };
 
@@ -105,7 +103,6 @@ export function FileUploader({ organizationId, onUploadComplete }: FileUploaderP
 
   const removeFile = (id: string) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
-    try { uppyRef.current?.removeFile(id); } catch { /* already removed */ }
   };
 
   return (
@@ -130,7 +127,7 @@ export function FileUploader({ organizationId, onUploadComplete }: FileUploaderP
           className="hidden"
           multiple
           accept=".pdf,.docx,.xlsx,.pptx,.doc,.xls,.ppt"
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
         />
       </div>
 
@@ -156,7 +153,7 @@ export function FileUploader({ organizationId, onUploadComplete }: FileUploaderP
               {f.status === "error" && (
                 <span className="text-xs text-destructive">{f.error}</span>
               )}
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeFile(f.id)}>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); removeFile(f.id); }}>
                 <X className="h-3 w-3" />
               </Button>
             </div>

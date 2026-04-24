@@ -2,7 +2,27 @@ import type { DataProvider, BaseRecord, CrudFilter, LogicalFilter, CrudSort } fr
 
 type MockRecord = BaseRecord & { id: string; [key: string]: unknown };
 
-const store: Map<string, MockRecord[]> = new Map();
+const STORAGE_KEY = "sia_portal_data";
+
+function loadStore(): Map<string, MockRecord[]> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const obj = JSON.parse(raw);
+      return new Map(Object.entries(obj));
+    }
+  } catch { /* ignore */ }
+  return new Map();
+}
+
+function saveStore(): void {
+  try {
+    const obj = Object.fromEntries(store);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  } catch { /* ignore */ }
+}
+
+const store: Map<string, MockRecord[]> = loadStore();
 
 function getCollection(resource: string): MockRecord[] {
   if (!store.has(resource)) store.set(resource, []);
@@ -74,6 +94,7 @@ export const mockDataProvider: DataProvider = {
     const item: MockRecord = { ...(variables as MockRecord), id: (variables as MockRecord).id ?? generateId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     getCollection(resource).push(item);
     logActivity("created", resource, item);
+    saveStore();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { data: item as any };
   },
@@ -84,6 +105,7 @@ export const mockDataProvider: DataProvider = {
     if (idx === -1) throw new Error(`${resource}/${id} not found`);
     col[idx] = { ...col[idx], ...(variables as MockRecord), updatedAt: new Date().toISOString() };
     logActivity("updated", resource, col[idx]);
+    saveStore();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { data: col[idx] as any };
   },
@@ -94,6 +116,7 @@ export const mockDataProvider: DataProvider = {
     if (idx === -1) throw new Error(`${resource}/${id} not found`);
     const [deleted] = col.splice(idx, 1);
     logActivity("deleted", resource, deleted);
+    saveStore();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { data: deleted as any };
   },
@@ -124,7 +147,7 @@ function logActivity(action: string, resource: string, record: MockRecord) {
   });
 }
 
-// Seed data
+// Seed only if no data exists
 function seed() {
   const orgs = getCollection("organizations");
   if (orgs.length > 0) return;
@@ -173,6 +196,8 @@ function seed() {
   users.push(
     { id: "user-1", email: "board@wider.community", name: "Omar", avatar: "", role: "admin", locale: "en", theme: "dark", lastLoginAt: "2026-04-24T10:00:00Z", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-04-24T10:00:00Z" },
   );
+
+  saveStore();
 }
 
 seed();
