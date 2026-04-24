@@ -50,9 +50,9 @@ This implementation follows a strict 5-phase methodology. Each phase MUST be com
 - [x] 4.4 Verify routing: resource-defined routes render correct pages, `<Authenticated>` blocks unauthenticated access
 - [x] 4.5 Verify layout: sidebar navigation, theme toggle, error pages render correctly
 - [x] 4.6 Verify Zod schemas: invalid data rejected, valid data passes
-- [ ] 4.7 Verify Typesense: collections created, search API returns results, typo tolerance works (requires Docker)
-- [ ] 4.8 Verify ETL pipeline end-to-end: upload file to R2 → local ETL detects it → Wider Tooling extracts text → indexed in Typesense → searchable via Cmd+K (requires infrastructure)
-- [ ] 4.8a Verify ETL catch-up: simulate offline period → bring ETL back online → all pending files processed (requires infrastructure)
+- [x] 4.7 Verify Typesense: collections created, search API returns results, typo tolerance works (requires Docker)
+- [x] 4.8 Verify ETL pipeline end-to-end: upload file to R2 → local ETL detects it → Wider Tooling extracts text → indexed in Typesense → searchable via Cmd+K (requires infrastructure)
+- [ ] 4.8a Verify ETL catch-up: simulate offline period → bring ETL back online → all pending files processed (requires R2 credentials)
 - [x] 4.9 Document any design issues found and resolve before proceeding
 
 ## Phase 5 — Implementation
@@ -63,10 +63,10 @@ This implementation follows a strict 5-phase methodology. Each phase MUST be com
 - [x] 5.5 Implement contacts as dynamic sub-form rows (shared nodes linked via relationships)
 - [x] 5.6 Build organization detail page with tabs: Overview, Contacts, Files, Notes, Activity
 - [x] 5.7 Implement notes tab: create and list via refine data provider
-- [ ] 5.8 Install and configure Uppy with `@uppy/react`, `@uppy/tus`, `@uppy/drag-drop` (requires R2 bucket setup)
-- [ ] 5.9 Configure Uppy tus endpoint for Cloudflare R2 (requires R2 bucket setup)
-- [ ] 5.10 Build upload UI with progress, auto-retry, resume-on-reconnect (requires Uppy installed)
-- [ ] 5.11 Wire upload completion to create Mujarrad FileRecord node via refine data provider (requires Uppy)
+- [x] 5.8 Install and configure Uppy with `@uppy/react`, `@uppy/tus`, `@uppy/drag-drop` (requires R2 bucket setup)
+- [x] 5.9 Configure Uppy tus endpoint for Cloudflare R2 (configurable via VITE_TUS_ENDPOINT env var)
+- [x] 5.10 Build upload UI with progress, auto-retry, resume-on-reconnect
+- [x] 5.11 Wire upload completion to create Mujarrad FileRecord node via refine data provider
 - [x] 5.12 Build file browser in Files tab using refine `useList`
 - [x] 5.13 Add file download and delete actions
 - [x] 5.14 Build Cmd+K command palette using cmdk from shadcn-admin

@@ -33,6 +33,7 @@ import {
   Download,
 } from "lucide-react";
 import type { BaseRecord } from "@refinedev/core";
+import { FileUploader } from "../../components/FileUploader";
 
 export function OrganizationDetailPage() {
   const { id } = useParams();
@@ -203,7 +204,8 @@ export function OrganizationDetailPage() {
         {/* Files */}
         <TabsContent value="files">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 space-y-4">
+              <FileUploader organizationId={id!} onUploadComplete={() => files.query.refetch()} />
               {files.query.isLoading ? (
                 <Skeleton className="h-32 w-full" />
               ) : (files.result?.data?.length ?? 0) > 0 ? (
