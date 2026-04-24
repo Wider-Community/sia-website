@@ -4,6 +4,20 @@ All entities are stored as Mujarrad nodes in space `sia-portal`. Relationships a
 
 ## Entities (Mujarrad Nodes)
 
+### User (REGULAR node)
+| Attribute       | Type     | Required | Notes                                    |
+|-----------------|----------|----------|------------------------------------------|
+| id              | string   | yes      | Mujarrad node ID                         |
+| email           | string   | yes      | Unique                                   |
+| name            | string   | yes      | Display name                             |
+| avatar          | string   | no       | URL to profile image                     |
+| role            | string   | yes      | "admin" or "client"                      |
+| locale          | string   | no       | e.g. "en", "ar". Default "en"            |
+| theme           | string   | no       | "light" or "dark". Default "dark"        |
+| lastLoginAt     | datetime | no       | Updated on each login                    |
+| createdAt       | datetime | yes      | Auto-set                                 |
+| updatedAt       | datetime | yes      | Auto-set                                 |
+
 ### Organization (REGULAR node)
 | Attribute       | Type     | Required | Notes                                    |
 |-----------------|----------|----------|------------------------------------------|
