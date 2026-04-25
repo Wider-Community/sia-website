@@ -1,13 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useThemeStore } from "@/stores/themeStore";
-import { useGoogleLogin } from "@react-oauth/google";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
-
 export function LoginPage() {
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Force light mode for investor login
@@ -25,72 +20,18 @@ export function LoginPage() {
     }
   }, [navigate]);
 
-  const googleLogin = useGoogleLogin({
-    flow: "implicit",
-    onSuccess: async (tokenResponse) => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Exchange Google access token for an ID token via Google's tokeninfo
-        // Then send to Mujarrad's OAuth endpoint
-        const idTokenRes = await fetch(
-          `https://oauth2.googleapis.com/tokeninfo?access_token=${tokenResponse.access_token}`
-        );
-        if (!idTokenRes.ok) throw new Error("Failed to verify Google token");
-
-        // Get user info from Google
-        const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
-        if (!userInfoRes.ok) throw new Error("Failed to fetch user info");
-        const userInfo = await userInfoRes.json();
-
-        // Try Mujarrad OAuth endpoint with the access token
-        // Mujarrad expects an idToken, but let's try the Google credential flow
-        let mujarradRes = await fetch(`${API_BASE}/api/auth/oauth/google`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken: tokenResponse.access_token }),
-        });
-
-        let session;
-        if (mujarradRes.ok) {
-          const data = await mujarradRes.json();
-          session = {
-            token: data.token,
-            role: "investor",
-            email: userInfo.email,
-            name: userInfo.name,
-            picture: userInfo.picture,
-            userId: data.userId || data.user?.id,
-          };
-        } else {
-          // Fallback: store Google session directly (Mujarrad may not be reachable)
-          console.warn("Mujarrad OAuth failed, using Google session directly");
-          session = {
-            token: tokenResponse.access_token,
-            role: "investor",
-            email: userInfo.email,
-            name: userInfo.name,
-            picture: userInfo.picture,
-            provider: "google-direct",
-          };
-        }
-
-        localStorage.setItem("sia-investor-session", JSON.stringify(session));
-        navigate("/investor/dashboard");
-      } catch (err) {
-        console.error("Login error:", err);
-        setError(err instanceof Error ? err.message : "Login failed. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    onError: (err) => {
-      console.error("Google login error:", err);
-      setError("Google sign-in was cancelled or failed. Please try again.");
-    },
-  });
+  const handleDummyLogin = () => {
+    setLoading(true);
+    const session = {
+      token: "dummy-token",
+      role: "investor",
+      email: "investor@sia.com",
+      name: "SIA Investor",
+      provider: "dummy",
+    };
+    localStorage.setItem("sia-investor-session", JSON.stringify(session));
+    navigate("/investor/dashboard");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: "var(--bg)" }}>
@@ -103,14 +44,8 @@ export function LoginPage() {
           Sign in to access financial models and analytics
         </p>
 
-        {error && (
-          <div className="mb-4 p-3 rounded-lg text-sm text-red-700 bg-red-50 border border-red-200">
-            {error}
-          </div>
-        )}
-
-        <button
-          onClick={() => googleLogin()}
+<button
+          onClick={handleDummyLogin}
           disabled={loading}
           className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg font-semibold transition-all disabled:opacity-50"
           style={{ backgroundColor: "var(--accent)", color: "#1a1a1a" }}

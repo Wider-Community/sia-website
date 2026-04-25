@@ -1,0 +1,269 @@
+/* SIA — Theme + Locale stylesheet
+   Layered ON TOP of the base dark/LTR styles in SIA Wireframes.html.
+   Activated via data-theme + data-lang + dir on <html>.
+*/
+
+/* === LIGHT THEME ====================================================== */
+html[data-theme="light"]{
+  --bg:#f7f5f0;
+  --bg-2:#efece4;
+  --ink:#15151c;
+  --ink-dim:#4a4d56;
+  --ink-muted:#8a8d96;
+  --line:rgba(20,20,30,.10);
+  --line-bright:rgba(20,20,30,.20);
+
+  /* saturated tier accents (work better on warm paper) */
+  --t1:#5a4ce0;       /* deep violet */
+  --t1-deep:#3d2db8;
+  --t2:#0d8866;       /* deep teal */
+  --t2-deep:#066a4d;
+  --t3:#c25a2c;       /* terracotta */
+  --t3-deep:#a14418;
+  --t4:#1f6fc2;       /* deep blue */
+  --t4-deep:#0e4f96;
+  --t5:#7a3fc0;       /* royal violet */
+  --t5-deep:#5b2697;
+  --gcc:#5a4ce0;
+  --my:#0d8866;
+  --eg:#c25a2c;
+}
+html[data-theme="light"] body{background:var(--bg);color:var(--ink)}
+
+html[data-theme="light"] nav.top{
+  background:rgba(247,245,240,.78);
+  border-bottom:1px solid rgba(20,20,30,.08);
+}
+html[data-theme="light"] .btn-primary{background:#15151c;color:#fff;border-color:#15151c}
+html[data-theme="light"] .btn-primary:hover{background:#15151c;color:#fff;box-shadow:0 0 0 4px rgba(20,20,30,.08)}
+html[data-theme="light"] .btn{border-color:rgba(20,20,30,.16)}
+html[data-theme="light"] .btn:hover{background:rgba(20,20,30,.04);border-color:rgba(20,20,30,.28)}
+
+/* Hero — soften aurora + remove heavy bloom */
+html[data-theme="light"] .hero-bloom{display:none}
+html[data-theme="light"] .hero-stipple{display:none}
+html[data-theme="light"] .hero-vignette{
+  background:radial-gradient(ellipse 80% 60% at 50% 100%, rgba(247,245,240,0) 0%, var(--bg) 100%);
+}
+html[data-theme="light"] .hero-scan{opacity:.04}
+html[data-theme="light"] .grid-bg{
+  background-image:
+    linear-gradient(rgba(20,20,30,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20,20,30,.05) 1px, transparent 1px);
+}
+html[data-theme="light"] .noise{display:none}
+
+/* Eyebrow / tags / muted text */
+html[data-theme="light"] .eyebrow{
+  background:rgba(255,255,255,.6);
+  border-color:rgba(20,20,30,.14);
+  box-shadow:0 1px 3px rgba(20,20,30,.04);
+}
+html[data-theme="light"] .eyebrow-pulse{background:rgba(13,136,102,.14)}
+
+/* Section intro tags use the saturated emerald */
+html[data-theme="light"] .section-tag{color:var(--t2-deep)}
+html[data-theme="light"] .section-tag::before{background:var(--t2-deep)}
+
+/* Pillars + cards — paper feel */
+html[data-theme="light"] .pillar,
+html[data-theme="light"] .door,
+html[data-theme="light"] .phase-data{
+  background:#fffefa;
+  border:1px solid rgba(20,20,30,.08);
+  box-shadow:0 1px 0 rgba(20,20,30,.04), 0 8px 24px -16px rgba(20,20,30,.10);
+}
+html[data-theme="light"] .pillar:hover,
+html[data-theme="light"] .door:hover{
+  border-color:rgba(20,20,30,.16);
+  box-shadow:0 1px 0 rgba(20,20,30,.06), 0 12px 32px -16px rgba(20,20,30,.16);
+}
+
+/* Phase numbers — ink gradient */
+html[data-theme="light"] .phase-num{
+  background:linear-gradient(180deg,var(--ink) 0%,rgba(20,20,30,.25) 100%) !important;
+  -webkit-background-clip:text;background-clip:text;
+}
+html[data-theme="light"] .phase-row[data-tier="1"] .phase-num{background:linear-gradient(180deg,var(--t1) 0%,rgba(90,76,224,.25) 100%) !important;-webkit-background-clip:text;background-clip:text}
+html[data-theme="light"] .phase-row[data-tier="2"] .phase-num{background:linear-gradient(180deg,var(--t2) 0%,rgba(13,136,102,.25) 100%) !important;-webkit-background-clip:text;background-clip:text}
+html[data-theme="light"] .phase-row[data-tier="3"] .phase-num{background:linear-gradient(180deg,var(--t3) 0%,rgba(194,90,44,.25) 100%) !important;-webkit-background-clip:text;background-clip:text}
+html[data-theme="light"] .phase-row[data-tier="4"] .phase-num{background:linear-gradient(180deg,var(--t4) 0%,rgba(31,111,194,.25) 100%) !important;-webkit-background-clip:text;background-clip:text}
+html[data-theme="light"] .phase-row[data-tier="5"] .phase-num{background:linear-gradient(180deg,var(--t5) 0%,rgba(122,63,192,.25) 100%) !important;-webkit-background-clip:text;background-clip:text}
+
+/* Phase rows divider */
+html[data-theme="light"] .phase-row{border-top-color:rgba(20,20,30,.10)}
+html[data-theme="light"] .phase-row:last-child{border-bottom-color:rgba(20,20,30,.10)}
+
+/* Hero italic gradient — keep, but darken so it reads on warm paper */
+html[data-theme="light"] h1.hero-title .ital{
+  background:linear-gradient(120deg,var(--t1) 0%,var(--t2) 50%,var(--t5) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* Network — replace tier-band glows with hairline ink rules */
+html[data-theme="light"] .net-tier-band rect{display:none}
+html[data-theme="light"] .net-tier-band line{stroke:rgba(20,20,30,.15) !important}
+html[data-theme="light"] .net-tier-label,
+html[data-theme="light"] .net-tier-headline,
+html[data-theme="light"] .net-tier-meta{fill:var(--ink-dim)}
+html[data-theme="light"] .net-tier-band[data-tier="1"] .net-tier-label,
+html[data-theme="light"] .net-tier-band[data-tier="1"] .net-tier-headline{fill:var(--t1)}
+html[data-theme="light"] .net-tier-band[data-tier="2"] .net-tier-label,
+html[data-theme="light"] .net-tier-band[data-tier="2"] .net-tier-headline{fill:var(--t2)}
+html[data-theme="light"] .net-tier-band[data-tier="3"] .net-tier-label,
+html[data-theme="light"] .net-tier-band[data-tier="3"] .net-tier-headline{fill:var(--t3)}
+html[data-theme="light"] .net-tier-band[data-tier="4"] .net-tier-label,
+html[data-theme="light"] .net-tier-band[data-tier="4"] .net-tier-headline{fill:var(--t4)}
+html[data-theme="light"] .net-tier-band[data-tier="5"] .net-tier-label,
+html[data-theme="light"] .net-tier-band[data-tier="5"] .net-tier-headline{fill:var(--t5)}
+
+html[data-theme="light"] .net-node circle{stroke-opacity:.4}
+html[data-theme="light"] .net-node-label{fill:var(--ink) !important}
+html[data-theme="light"] .net-node-sub{fill:var(--ink-muted) !important}
+
+/* Mini-bands — restrained shadows instead of glow */
+html[data-theme="light"] .phase-mini::before{display:none}
+html[data-theme="light"] .phase-mini{
+  border-top:1px solid rgba(20,20,30,.08);
+  border-bottom:1px solid rgba(20,20,30,.08);
+}
+html[data-theme="light"] .phase-mini .pm-edge.pm-edge-active{
+  filter:drop-shadow(0 1px 2px rgba(20,20,30,.18)) !important;
+}
+html[data-theme="light"] .phase-mini .pm-side-label{fill:var(--ink-muted) !important}
+html[data-theme="light"] .phase-mini .pm-node-label{fill:var(--ink-dim) !important}
+
+/* Closing CTA */
+html[data-theme="light"] .closing-aurora{display:none}
+
+/* Doors arrow + headings — keep readable */
+html[data-theme="light"] .door-cta{color:var(--ink)}
+
+/* Scan / text-selection */
+html[data-theme="light"] ::selection{background:var(--t2-deep);color:#fff}
+
+/* === ARABIC + RTL ===================================================== */
+html[lang="ar"]{
+  font-family:'IBM Plex Sans Arabic','Geist',system-ui,sans-serif;
+}
+html[lang="ar"] body{
+  font-family:'IBM Plex Sans Arabic','Geist',system-ui,sans-serif;
+  letter-spacing:0;
+  font-feature-settings:"kern" 1, "liga" 1;
+}
+/* Use serif Plex for italics analog (heavier weight) */
+html[lang="ar"] .ital,
+html[lang="ar"] h1.hero-title .ital,
+html[lang="ar"] .section-title .ital,
+html[lang="ar"] .phase-headline,
+html[lang="ar"] .closing h2 .ital{
+  font-family:'IBM Plex Sans Arabic','Geist',sans-serif !important;
+  font-style:normal !important;
+  font-weight:600 !important;
+  letter-spacing:0 !important;
+}
+html[lang="ar"] h1.hero-title,
+html[lang="ar"] .section-title,
+html[lang="ar"] .phase-headline,
+html[lang="ar"] .closing h2{
+  font-family:'IBM Plex Sans Arabic','Geist',sans-serif !important;
+  font-weight:300 !important;
+  letter-spacing:0 !important;
+  line-height:1.18;
+}
+html[lang="ar"] .hero-sub,
+html[lang="ar"] .section-desc,
+html[lang="ar"] .phase-body,
+html[lang="ar"] .pillar p,
+html[lang="ar"] .door-desc,
+html[lang="ar"] .closing-sub{
+  font-family:'IBM Plex Sans Arabic','Geist',sans-serif !important;
+  letter-spacing:0;
+  line-height:1.7;
+}
+
+/* RTL — flip arrows, gutters, alignment */
+html[dir="rtl"] body{text-align:right}
+html[dir="rtl"] .nav-links{flex-direction:row-reverse}
+html[dir="rtl"] .nav-cta{flex-direction:row-reverse}
+html[dir="rtl"] .arrow,
+html[dir="rtl"] .arr{display:inline-block;transform:scaleX(-1)}
+html[dir="rtl"] .section-tag::before{
+  /* keep the rule on the leading side (right in RTL) */
+}
+html[dir="rtl"] .section-tag{flex-direction:row-reverse}
+html[dir="rtl"] .pillar .p-tag{flex-direction:row-reverse}
+html[dir="rtl"] .phase-row{grid-template-columns:360px 1fr 96px}
+html[dir="rtl"] .phase-tier{flex-direction:row-reverse}
+html[dir="rtl"] .phase-tier::after{
+  background:linear-gradient(270deg,currentColor,transparent);
+}
+html[dir="rtl"] .completion{direction:rtl}
+html[dir="rtl"] .doors{direction:rtl}
+html[dir="rtl"] .door-num{flex-direction:row-reverse;justify-content:space-between}
+html[dir="rtl"] .door-cta{flex-direction:row-reverse;justify-content:space-between}
+html[dir="rtl"] .hero-meta{direction:rtl}
+html[dir="rtl"] .footer-grid{direction:rtl}
+
+/* Pulse dot on nav stays on the leading edge */
+html[dir="rtl"] .nav-links .has-dot{padding-right:20px;padding-left:14px}
+html[dir="rtl"] .nav-links .has-dot::before{left:auto;right:6px}
+
+/* Hero stage — keep the visual LTR (it's a map), only flip its container alignment */
+html[dir="rtl"] .hero-inner{direction:rtl}
+html[dir="rtl"] .hero-inner > div:nth-child(2){direction:ltr}
+
+/* Network viz: keep LTR (geographic — GCC left, MY right) */
+html[dir="rtl"] .net-stage,
+html[dir="rtl"] .network,
+html[dir="rtl"] #netSvg,
+html[dir="rtl"] .phase-mini svg,
+html[dir="rtl"] .net-info{direction:ltr;text-align:left}
+html[dir="rtl"] .phase-mini-head{direction:ltr;text-align:left}
+html[dir="rtl"] .completion-note,
+html[dir="rtl"] .pm-side-label{direction:ltr}
+
+/* === LANG / THEME TOGGLE WIDGETS ===================================== */
+.tg-group{
+  display:inline-flex;align-items:center;
+  border:1px solid var(--line);
+  border-radius:100px;padding:3px;gap:2px;
+  background:rgba(255,255,255,.02);
+  backdrop-filter:blur(8px);
+}
+html[data-theme="light"] .tg-group{
+  background:rgba(255,255,255,.6);
+  border-color:rgba(20,20,30,.12);
+}
+.tg-btn{
+  font-family:var(--mono);
+  font-size:11px;letter-spacing:.06em;
+  padding:6px 11px;
+  border-radius:100px;
+  color:var(--ink-muted);
+  cursor:pointer;
+  transition:all .2s;
+  background:transparent;
+  border:none;
+  display:inline-flex;align-items:center;gap:6px;
+  line-height:1;
+}
+.tg-btn:hover{color:var(--ink-dim)}
+.tg-btn.is-active{
+  background:var(--ink);color:var(--bg);
+  font-weight:600;
+}
+html[data-theme="light"] .tg-btn.is-active{
+  background:var(--ink);color:#fff;
+}
+.tg-btn svg{width:13px;height:13px;display:block}
+
+/* RTL: keep toggles flowing leading→trailing properly */
+html[dir="rtl"] .nav-cta{gap:8px}
+html[dir="rtl"] .tg-group{direction:ltr} /* keep EN | AR order stable */
+
+/* Hide on small screens — collapse into icon-only */
+@media (max-width:880px){
+  .tg-group .tg-label{display:none}
+  .tg-btn{padding:6px 8px}
+}
