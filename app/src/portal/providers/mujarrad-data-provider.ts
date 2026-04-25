@@ -4,17 +4,33 @@ function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-const API_URL = import.meta.env.DEV ? "/mujarrad-api" : (import.meta.env.VITE_MUJARRAD_API_URL ?? "https://mujarrad.onrender.com/api");
+const API_URL = "/mujarrad-api";
 const SPACE = "sia-portal-platform";
 const ADMIN_EMAIL = import.meta.env.VITE_MUJARRAD_ADMIN_EMAIL ?? "";
 const ADMIN_PASSWORD = import.meta.env.VITE_MUJARRAD_ADMIN_PASSWORD ?? "";
 
 let cachedToken: string | null = null;
-let tokenPromise: Promise<string> | null = null;
+let tokenPromise: Promise<string | null> | null = null;
 
-async function ensureToken(): Promise<string> {
+async function fetchToken(): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    cachedToken = data.token;
+    localStorage.setItem("sia_mujarrad_token", data.token);
+    return data.token;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureToken(): Promise<string | null> {
   if (cachedToken) return cachedToken;
-  if (tokenPromise) return tokenPromise;
   const stored = localStorage.getItem("sia_mujarrad_token");
   if (stored) {
     try {
@@ -23,45 +39,28 @@ async function ensureToken(): Promise<string> {
         cachedToken = stored;
         return stored;
       }
-    } catch { /* expired or invalid */ }
+    } catch { /* expired */ }
   }
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-    throw new Error("Mujarad credentials not configured");
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) return null;
+  if (!tokenPromise) {
+    tokenPromise = fetchToken().finally(() => { tokenPromise = null; });
   }
-  tokenPromise = fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
-  })
-    .then((res) => {
-      if (!res.ok) throw new Error("Mujarad login failed");
-      return res.json();
-    })
-    .then((data) => {
-      cachedToken = data.token;
-      localStorage.setItem("sia_mujarrad_token", data.token);
-      tokenPromise = null;
-      return data.token;
-    })
-    .catch((err) => {
-      tokenPromise = null;
-      throw err;
-    });
   return tokenPromise;
 }
 
-function getHeaders(token: string): HeadersInit {
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-}
+// Pre-fetch token on module load
+ensureToken();
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+async function request<T>(path: string, options?: RequestInit): Promise<T | null> {
   const token = await ensureToken();
+  if (!token) return null;
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
-    headers: { ...getHeaders(token), ...options?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...options?.headers,
+    },
   });
   if (!res.ok) {
     if (res.status === 401) {
@@ -69,9 +68,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       localStorage.removeItem("sia_mujarrad_token");
     }
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message ?? `Request failed: ${res.status}`);
+    throw new Error((body as Record<string, string>).message ?? `Request failed: ${res.status}`);
   }
-  if (res.status === 204) return undefined as T;
+  if (res.status === 204) return null;
   return res.json();
 }
 
@@ -103,49 +102,32 @@ function normalizeNode(node: MujarradNode): Record<string, unknown> {
   };
 }
 
-function clientFilter(
-  data: Record<string, unknown>[],
-  filters?: CrudFilter[],
-): Record<string, unknown>[] {
+function clientFilter(data: Record<string, unknown>[], filters?: CrudFilter[]): Record<string, unknown>[] {
   if (!filters?.length) return data;
   return data.filter((item) =>
     filters.every((f) => {
       if (!("field" in f)) return true;
       const val = item[f.field];
-      switch (f.operator) {
-        case "eq":
-          return val === f.value;
-        case "ne":
-          return val !== f.value;
-        case "contains":
-          return typeof val === "string" && val.toLowerCase().includes(String(f.value).toLowerCase());
-        default:
-          return true;
-      }
+      if (f.operator === "eq") return val === f.value;
+      if (f.operator === "ne") return val !== f.value;
+      if (f.operator === "contains") return typeof val === "string" && val.toLowerCase().includes(String(f.value).toLowerCase());
+      return true;
     }),
   );
 }
 
-function clientSort(
-  data: Record<string, unknown>[],
-  sorters?: CrudSort[],
-): Record<string, unknown>[] {
+function clientSort(data: Record<string, unknown>[], sorters?: CrudSort[]): Record<string, unknown>[] {
   if (!sorters?.length) return data;
   return [...data].sort((a, b) => {
     for (const s of sorters) {
-      const aVal = String(a[s.field] ?? "");
-      const bVal = String(b[s.field] ?? "");
-      const cmp = aVal.localeCompare(bVal);
+      const cmp = String(a[s.field] ?? "").localeCompare(String(b[s.field] ?? ""));
       if (cmp !== 0) return s.order === "desc" ? -cmp : cmp;
     }
     return 0;
   });
 }
 
-function clientPaginate(
-  data: Record<string, unknown>[],
-  pagination?: Pagination,
-): Record<string, unknown>[] {
+function clientPaginate(data: Record<string, unknown>[], pagination?: Pagination): Record<string, unknown>[] {
   if (!pagination || pagination.mode === "off") return data;
   const page = pagination.current ?? 1;
   const size = pagination.pageSize ?? 10;
@@ -158,8 +140,8 @@ export const mujarradDataProvider: DataProvider = {
 
   async getList({ resource, pagination, filters, sorters }) {
     const nodes = await request<MujarradNode[]>(`/spaces/${SPACE}/nodes?search=`);
+    if (!nodes) return { data: [] as any, total: 0 };
     const allNormalized = nodes.map(normalizeNode);
-    // Filter by resource type stored in nodeDetails._resourceType
     let data = allNormalized.filter((n) => n._resourceType === resource);
     data = clientFilter(data, filters);
     data = clientSort(data, sorters);
@@ -170,6 +152,7 @@ export const mujarradDataProvider: DataProvider = {
 
   async getOne({ id }) {
     const node = await request<MujarradNode>(`/spaces/${SPACE}/nodes/${id}`);
+    if (!node) throw new Error("Not found");
     return { data: normalizeNode(node) as any };
   },
 
@@ -186,13 +169,14 @@ export const mujarradDataProvider: DataProvider = {
         nodeDetails: { ...vars, _resourceType: resource },
       }),
     });
+    if (!node) throw new Error("Create failed — not connected to Mujarad");
     return { data: normalizeNode(node) as any };
   },
 
   async update({ id, variables }) {
     const vars = variables as Record<string, unknown>;
-    // First get existing node to preserve fields
     const existing = await request<MujarradNode>(`/spaces/${SPACE}/nodes/${id}`);
+    if (!existing) throw new Error("Not found");
     const title = (vars.name as string) || (vars.title as string) || existing.title;
     const node = await request<MujarradNode>(`/spaces/${SPACE}/nodes/${id}`, {
       method: "PUT",
@@ -201,13 +185,10 @@ export const mujarradDataProvider: DataProvider = {
         slug: existing.slug,
         nodeType: existing.nodeType,
         content: (vars.description as string) ?? existing.content ?? "",
-        nodeDetails: {
-          ...existing.nodeDetails,
-          ...vars,
-          _resourceType: existing.nodeDetails._resourceType,
-        },
+        nodeDetails: { ...existing.nodeDetails, ...vars, _resourceType: existing.nodeDetails._resourceType },
       }),
     });
+    if (!node) throw new Error("Update failed");
     return { data: normalizeNode(node) as any };
   },
 
@@ -225,7 +206,7 @@ export const mujarradDataProvider: DataProvider = {
       body: payload ? JSON.stringify(payload) : undefined,
       headers: customHeaders as HeadersInit,
     });
-    return { data: res as any };
+    return { data: (res ?? {}) as any };
   },
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
