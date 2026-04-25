@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import {
   DndContext,
   DragOverlay,
-  DragStartEvent,
-  DragEndEvent,
   useDroppable,
   useDraggable,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
 import { Card, CardContent } from "@/components/ui/card";
 
 export interface KanbanColumn<T> {
