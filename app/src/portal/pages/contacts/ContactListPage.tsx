@@ -32,7 +32,7 @@ export function ContactListPage() {
 
   const orgMap = useMemo(() => {
     const map = new Map<string, string>();
-    (orgsList.result?.data ?? []).forEach((org: { id: unknown; name: unknown }) => {
+    (orgsList.result?.data ?? []).forEach((org) => {
       map.set(org.id as string, org.name as string);
     });
     return map;

@@ -8,6 +8,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
 import { motion, LayoutGroup } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { AnimatedCounter } from "@/components/effects/AnimatedCounter";

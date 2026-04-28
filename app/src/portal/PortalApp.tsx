@@ -1,7 +1,7 @@
 import { Refine, Authenticated } from "@refinedev/core";
 import routerProvider from "@refinedev/react-router";
 import { Outlet, Navigate } from "react-router-dom";
-import { Building2, Users, FileSignature, CheckSquare, Settings } from "lucide-react";
+import { Building2, Users, FileSignature, CheckSquare } from "lucide-react";
 import {
   mockDataProvider,
   mockAuthProvider,

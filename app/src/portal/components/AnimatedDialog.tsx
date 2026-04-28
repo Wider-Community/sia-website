@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 

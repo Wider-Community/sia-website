@@ -50,10 +50,10 @@ export function ContactFormPage() {
 
   const createMutation = useCreate();
   const createContact = createMutation.mutate;
-  const isCreating = createMutation.isPending ?? false;
+  const isCreating = (createMutation as unknown as { isPending?: boolean }).isPending ?? false;
   const updateMutation = useUpdate();
   const updateContact = updateMutation.mutate;
-  const isUpdating = updateMutation.isPending ?? false;
+  const isUpdating = (updateMutation as unknown as { isPending?: boolean }).isPending ?? false;
 
   const {
     register,
@@ -171,7 +171,7 @@ export function ContactFormPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {(orgsData.result?.data ?? []).map((org: { id: unknown; name: unknown }) => (
+                    {(orgsData.result?.data ?? []).map((org) => (
                       <SelectItem key={org.id as string} value={org.id as string}>
                         {org.name as string}
                       </SelectItem>
