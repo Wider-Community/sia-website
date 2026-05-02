@@ -400,7 +400,7 @@ export function OrganizationDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {contacts.result!.data.map((c: BaseRecord) => (
-                      <TableRow key={c.id as string}>
+                      <TableRow key={c.id as string} className="cursor-pointer" onClick={() => navigate(`/portal/contacts/${c.id}`)}>
                         <TableCell className="font-medium">{c.firstName as string} {c.lastName as string}</TableCell>
                         <TableCell>{(c.email as string) || "—"}</TableCell>
                         <TableCell>{(c.phone as string) || "—"}</TableCell>

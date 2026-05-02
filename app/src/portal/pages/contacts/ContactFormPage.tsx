@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useCreate, useUpdate, useOne, useList } from "@refinedev/core";
 import { z } from "zod";
 import { useEffect } from "react";
@@ -35,6 +35,8 @@ type FormValues = z.infer<typeof formSchema>;
 export function ContactFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const prefilledOrgId = searchParams.get("organizationId") ?? "";
   const isEdit = Boolean(id);
 
   const { result: orgsResult } = useList({
@@ -67,7 +69,7 @@ export function ContactFormPage() {
       email: "",
       phone: "",
       role: "",
-      organizationId: "",
+      organizationId: prefilledOrgId,
     },
   });
 

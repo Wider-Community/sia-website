@@ -32,11 +32,13 @@ import {
   ChevronUp,
   Search,
   Map as MapIcon,
+  Layers,
 } from "lucide-react";
 
 const navItems = [
   { title: "Dashboard", path: "/portal", icon: LayoutDashboard },
   { title: "Organizations", path: "/portal/organizations", icon: Building2 },
+  { title: "Engagements", path: "/portal/engagements", icon: Layers },
   { title: "Contacts", path: "/portal/contacts", icon: Users },
   { title: "Map", path: "/portal/map", icon: MapIcon },
   { title: "Pipeline", path: "/portal/pipeline", icon: Kanban },
