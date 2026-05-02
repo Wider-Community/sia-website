@@ -1,4 +1,4 @@
-import { useList } from "@refinedev/core";
+import { useList, useDelete } from "@refinedev/core";
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { PageShell } from "../../components/PageShell";
@@ -10,7 +10,7 @@ import { AnimatedButton } from "../../components/AnimatedButton";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "../../components/EmptyState";
 import type { BaseRecord } from "@refinedev/core";
@@ -18,6 +18,7 @@ import type { BaseRecord } from "@refinedev/core";
 export function ContactListPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const { mutate: deleteContact } = useDelete();
 
   const { result: contactsResult, query: contactsQuery } = useList({
     resource: "contacts",
@@ -80,6 +81,7 @@ export function ContactListPage() {
                 <TableHead>Phone</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Organization</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -125,12 +127,26 @@ export function ContactListPage() {
                           "—"
                         )}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Delete ${c.firstName} ${c.lastName}?`)) {
+                              deleteContact({ resource: "contacts", id: c.id as string });
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
                     </motion.tr>
                   ))}
                 </AnimatePresence>
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={6}>
                     <EmptyState
                       icon={Users}
                       title="No contacts yet"

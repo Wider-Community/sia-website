@@ -1,12 +1,23 @@
 import { useState } from "react";
-import { useOne } from "@refinedev/core";
+import { useOne, useDelete } from "@refinedev/core";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnimatedTabContent } from "../../components/AnimatedTabContent";
 import { Badge } from "@/components/ui/badge";
-import { Pencil } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Pencil, Trash2 } from "lucide-react";
 import { PageShell } from "../../components/PageShell";
 import { PageHeader } from "../../components/PageHeader";
 
@@ -17,6 +28,7 @@ export function ContactDetailPage() {
 
   const { query: contactQuery } = useOne({ resource: "contacts", id: id! });
   const contact = contactQuery.data?.data;
+  const { mutate: deleteContact } = useDelete();
 
   const { query: orgQuery } = useOne({
     resource: "organizations",
@@ -49,9 +61,39 @@ export function ContactDetailPage() {
         backTo="/portal/contacts"
         subtitle={contact.role ? (contact.role as string) : undefined}
         actions={
-          <Button variant="outline" onClick={() => navigate(`/portal/contacts/edit/${id}`)}>
-            <Pencil className="mr-2 h-4 w-4" /> Edit
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => navigate(`/portal/contacts/edit/${id}`)}>
+              <Pencil className="mr-2 h-4 w-4" /> Edit
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">
+                  <Trash2 className="mr-2 h-4 w-4 text-destructive" /> Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete contact?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete {fullName}. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() =>
+                      deleteContact(
+                        { resource: "contacts", id: id! },
+                        { onSuccess: () => navigate("/portal/contacts") },
+                      )
+                    }
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
         }
       />
 
