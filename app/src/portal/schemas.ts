@@ -14,7 +14,7 @@ export type OrgLocation = z.infer<typeof locationSchema>;
 
 export const organizationSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  type: z.enum(["partner", "investor", "vendor", "client"], { message: "Type is required" }),
+  type: z.enum(["partner", "investor", "vendor", "client", "market_entity"], { message: "Type is required" }),
   status: z.enum(["active", "inactive", "prospect"], { message: "Status is required" }),
   locations: z.array(locationSchema).min(1, "At least one location is required").refine(
     (locs) => locs.filter((l) => l.isDefault).length === 1,

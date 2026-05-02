@@ -108,6 +108,7 @@ export function OrganizationFormPage() {
                     <SelectItem value="investor">Investor</SelectItem>
                     <SelectItem value="vendor">Vendor</SelectItem>
                     <SelectItem value="client">Client</SelectItem>
+                    <SelectItem value="market_entity">Market Entity</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
