@@ -59,6 +59,7 @@ export function OrganizationDetailPage() {
 
   const { mutate: createNote } = useCreate();
   const { mutate: deleteFile } = useDelete();
+  const { mutate: deleteOrg } = useDelete();
   const [noteText, setNoteText] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [emailOpen, setEmailOpen] = useState(false);
@@ -115,6 +116,34 @@ export function OrganizationDetailPage() {
             <Button variant="outline" onClick={() => navigate(`/portal/organizations/edit/${id}`)}>
               <Pencil className="mr-2 h-4 w-4" /> Edit
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">
+                  <Trash2 className="mr-2 h-4 w-4 text-destructive" /> Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete organization?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete {org?.name as string}. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() =>
+                      deleteOrg(
+                        { resource: "organizations", id: id! },
+                        { onSuccess: () => navigate("/portal/organizations") },
+                      )
+                    }
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </>
         }
       />

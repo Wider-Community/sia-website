@@ -37,10 +37,11 @@ export function ContactFormPage() {
   const { id } = useParams();
   const isEdit = Boolean(id);
 
-  const { data: orgsData } = useList({
+  const { result: orgsResult } = useList({
     resource: "organizations",
     pagination: { mode: "off" },
   });
+  const orgsData = orgsResult;
 
   const { query: contactQuery } = useOne({
     resource: "contacts",

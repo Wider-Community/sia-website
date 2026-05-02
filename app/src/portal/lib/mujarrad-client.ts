@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "/mujarrad-api";
+const DEFAULT_API_URL = import.meta.env.VITE_MUJARRAD_API_URL ?? import.meta.env.VITE_API_BASE_URL ?? "https://mujarrad.onrender.com";
 const DEFAULT_SPACE = "sia-portal-platform";
 
 export type NodeType = "REGULAR" | "CONTEXT" | "ASSUMPTION" | "TEMPLATE";
@@ -63,47 +63,28 @@ export class MujarradClient {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    let lastError: Error | null = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (attempt > 0) {
-        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+    {
+      const res = await fetch(`${this.apiUrl}${path}`, {
+        ...options,
+        headers: { ...headers, ...options?.headers },
+      });
+
+      if (res.status === 204) return null as T;
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new MujarradError(
+          (body as Record<string, string>).message ?? `HTTP ${res.status}`,
+          res.status,
+        );
       }
-      try {
-        const res = await fetch(`${this.apiUrl}${path}`, {
-          ...options,
-          headers: { ...headers, ...options?.headers },
-        });
 
-        if (res.status === 204) return null as T;
-
-        if (res.status === 429 || res.status >= 500) {
-          lastError = new MujarradError(
-            `HTTP ${res.status}`,
-            res.status,
-          );
-          continue;
-        }
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new MujarradError(
-            (body as Record<string, string>).message ?? `HTTP ${res.status}`,
-            res.status,
-          );
-        }
-
-        return await res.json();
-      } catch (err) {
-        if (err instanceof MujarradError) throw err;
-        lastError = err as Error;
-        continue;
-      }
+      return await res.json();
     }
-    throw lastError ?? new MujarradError("Request failed after retries", 0);
   }
 
   private spacePath(suffix: string): string {
-    return `/spaces/${this.spaceSlug}${suffix}`;
+    return `/api/spaces/${this.spaceSlug}${suffix}`;
   }
 
   async createNode<T = Record<string, unknown>>(
@@ -193,7 +174,7 @@ export class MujarradClient {
     attributeName: string,
     metadata?: Record<string, unknown>,
   ): Promise<MujarradAttribute> {
-    return this.request<MujarradAttribute>(`/nodes/${sourceNodeId}/attributes`, {
+    return this.request<MujarradAttribute>(`/api/nodes/${sourceNodeId}/attributes`, {
       method: "POST",
       body: JSON.stringify({
         sourceNodeId,
@@ -206,21 +187,21 @@ export class MujarradClient {
   }
 
   async getAttributes(nodeId: string): Promise<MujarradAttribute[]> {
-    return this.request<MujarradAttribute[]>(`/nodes/${nodeId}/attributes`);
+    return this.request<MujarradAttribute[]>(`/api/nodes/${nodeId}/attributes`);
   }
 
   async updateAttribute(
     attributeId: string,
     updates: { attributeName?: string; attributeValue?: Record<string, unknown> },
   ): Promise<MujarradAttribute> {
-    return this.request<MujarradAttribute>(`/attributes/${attributeId}`, {
+    return this.request<MujarradAttribute>(`/api/attributes/${attributeId}`, {
       method: "PUT",
       body: JSON.stringify(updates),
     });
   }
 
   async deleteAttribute(attributeId: string): Promise<void> {
-    await this.request<void>(`/attributes/${attributeId}`, {
+    await this.request<void>(`/api/attributes/${attributeId}`, {
       method: "DELETE",
     });
   }

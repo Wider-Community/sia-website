@@ -19,15 +19,18 @@ export function ContactListPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
-  const { data: contactsData, isLoading } = useList({
+  const { result: contactsResult, query: contactsQuery } = useList({
     resource: "contacts",
     pagination: { mode: "off" },
   });
+  const contactsData = contactsResult;
+  const isLoading = contactsQuery.isLoading;
 
-  const { data: orgsData } = useList({
+  const { result: orgsResult } = useList({
     resource: "organizations",
     pagination: { mode: "off" },
   });
+  const orgsData = orgsResult;
 
   const orgMap = useMemo(() => {
     const map = new Map<string, string>();

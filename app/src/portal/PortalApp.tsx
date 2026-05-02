@@ -67,6 +67,14 @@ export function PortalApp() {
       options={{
         syncWithLocation: true,
         warnWhenUnsavedChanges: true,
+        reactQuery: {
+          clientConfig: {
+            defaultOptions: {
+              queries: { retry: false },
+              mutations: { retry: false },
+            },
+          },
+        },
       }}
     >
       <Outlet />

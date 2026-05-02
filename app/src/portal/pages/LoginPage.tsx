@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLogin } from "@refinedev/core";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,9 +8,10 @@ import { AnimatedButton } from "../components/AnimatedButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -18,6 +20,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 const hasGoogleOAuth = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 export function PortalLoginPage() {
+  const [serverError, setServerError] = useState<string | null>(null);
   const { mutate: login, isPending: isLoading } = useLogin();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -31,7 +34,20 @@ export function PortalLoginPage() {
   };
 
   const onSubmit = (data: LoginForm) => {
-    login({ email: data.email, password: data.password });
+    setServerError(null);
+    login(
+      { email: data.email, password: data.password },
+      {
+        onSuccess: (result) => {
+          if (!result.success && result.error) {
+            setServerError(result.error.message ?? "Login failed. Please try again.");
+          }
+        },
+        onError: (error) => {
+          setServerError((error as Error)?.message ?? "Login failed. Please try again.");
+        },
+      },
+    );
   };
 
   return (
@@ -47,6 +63,12 @@ export function PortalLoginPage() {
           <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>
+          {serverError && (
+            <div className="mb-4 flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{serverError}</span>
+            </div>
+          )}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -54,6 +76,7 @@ export function PortalLoginPage() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
+                aria-invalid={!!errors.email}
                 {...register("email")}
               />
               {errors.email && (
@@ -65,6 +88,7 @@ export function PortalLoginPage() {
               <Input
                 id="password"
                 type="password"
+                aria-invalid={!!errors.password}
                 {...register("password")}
               />
               {errors.password && (

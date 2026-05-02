@@ -132,7 +132,7 @@ export function PortalDashboardPage() {
   const recentTasks = taskData
     .filter((t: BaseRecord) => t.status === "open")
     .sort((a: BaseRecord, b: BaseRecord) =>
-      (a.dueDate as string).localeCompare(b.dueDate as string),
+      ((a.dueDate as string) ?? "").localeCompare((b.dueDate as string) ?? ""),
     )
     .slice(0, 5);
 

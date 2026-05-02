@@ -94,7 +94,7 @@ export function TaskListPage() {
         header: "",
         cell: ({ row }) => {
           const task = row.original;
-          if (task.status === "done") return null;
+          const isDone = task.status === "done";
           return (
             <AnimatedButton
               variant="ghost"
@@ -104,11 +104,11 @@ export function TaskListPage() {
                 updateTask({
                   resource: "tasks",
                   id: task.id,
-                  values: { status: "done" },
+                  values: { status: isDone ? "open" : "done" },
                 });
               }}
             >
-              Mark Done
+              {isDone ? "Reopen" : "Mark Done"}
             </AnimatedButton>
           );
         },

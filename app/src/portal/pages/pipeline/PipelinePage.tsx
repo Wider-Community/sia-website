@@ -92,10 +92,11 @@ function OrgCard({ org }: { org: Organization }) {
 }
 
 export function PipelinePage() {
-  const { data, isLoading } = useList<Organization>({
+  const { result: orgsResult, query: orgsQuery } = useList<Organization>({
     resource: "organizations",
     pagination: { mode: "off" },
   });
+  const isLoading = orgsQuery.isLoading;
   const { mutate: updateOrg } = useUpdate();
 
   const [activeTab, setActiveTab] = useState("board");
@@ -105,7 +106,7 @@ export function PipelinePage() {
     toColumn: string;
   } | null>(null);
 
-  const orgs = data?.data ?? [];
+  const orgs = orgsResult?.data ?? [];
 
   const columns: KanbanColumn<Organization>[] = useMemo(() => {
     return PIPELINE_STAGES.map((stage) => ({

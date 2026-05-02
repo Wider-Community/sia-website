@@ -1,39 +1,59 @@
 import type { AuthProvider } from "@refinedev/core";
 
-const API_URL = import.meta.env.VITE_MUJARRAD_API_URL ?? "/mujarrad-api";
+const API_URL = import.meta.env.VITE_MUJARRAD_API_URL ?? import.meta.env.VITE_API_BASE_URL ?? "https://mujarrad.onrender.com";
 const TOKEN_KEY = "sia_token";
 const USER_KEY = "sia_user";
+
+// Note: React Query (used by Refine's useLogin) provides automatic caching
+// for auth state. The token/user stored in localStorage act as the persistent
+// cache layer, while React Query's in-memory cache prevents redundant API calls
+// during the session. No additional caching setup is needed.
 
 export const authProvider: AuthProvider = {
   async login(params) {
     try {
       if (params.provider === "google" && params.credential) {
-        const res = await fetch(`${API_URL}/auth/oauth/google`, {
+        const res = await fetch(`${API_URL}/api/auth/oauth/google`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ idToken: params.credential }),
         });
-        if (!res.ok) throw new Error("Google login failed");
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          const detail = body?.detail ?? "Google login failed";
+          throw new Error(detail);
+        }
         const { token, user } = await res.json();
         localStorage.setItem(TOKEN_KEY, token);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         return { success: true, redirectTo: "/portal" };
       }
 
-      const res = await fetch(`${API_URL}/auth/login`, {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: params.email, password: params.password }),
       });
-      if (!res.ok) throw new Error("Invalid credentials");
+      if (!res.ok) {
+        // Mujarrad returns RFC 7807 problem detail: { status, title, detail }
+        const body = await res.json().catch(() => null);
+        if (res.status === 401) {
+          throw new Error(body?.detail ?? "Invalid email or password");
+        }
+        throw new Error(body?.detail ?? body?.title ?? "Login failed. Please try again.");
+      }
       const { token, user } = await res.json();
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       return { success: true, redirectTo: "/portal" };
     } catch (err) {
+      const message =
+        err instanceof TypeError && err.message === "Failed to fetch"
+          ? "Network error. Please check your connection and try again."
+          : (err as Error).message;
       return {
         success: false,
-        error: { name: "LoginError", message: (err as Error).message },
+        error: { name: "LoginError", message },
       };
     }
   },
@@ -73,7 +93,7 @@ export const authProvider: AuthProvider = {
     const stored = localStorage.getItem(USER_KEY);
     if (stored) {
       const user = JSON.parse(stored);
-      return { id: user.id, name: user.name, email: user.email, avatar: user.avatar };
+      return { id: user.id, name: user.name ?? user.username, email: user.email, avatar: user.avatar ?? user.avatarUrl };
     }
     return null;
   },
