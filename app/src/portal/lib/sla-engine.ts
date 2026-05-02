@@ -100,6 +100,64 @@ export function evaluateSLA(
   return results;
 }
 
+// ── Engagement Level Score ──
+
+export interface EngagementLevel {
+  score: number;        // 0-100
+  label: string;        // No activity | Exploring | Developing | Strong | Strategic
+  color: string;        // tailwind color class
+  activeCount: number;
+  completedCount: number;
+  totalCount: number;
+}
+
+const STAGE_WEIGHTS: Record<string, number> = {
+  prospect: 10,
+  in_progress: 25,
+  negotiating: 50,
+  formalized: 75,
+  active: 90,
+  completed: 100,
+  dormant: 0,
+};
+
+export function computeEngagementLevel(
+  engagements: BaseRecord[],
+): EngagementLevel {
+  if (engagements.length === 0) {
+    return { score: 0, label: "No activity", color: "text-muted-foreground", activeCount: 0, completedCount: 0, totalCount: 0 };
+  }
+
+  const completedCount = engagements.filter((e) => e.stage === "completed").length;
+  // Active = everything except completed and dormant
+  const active = engagements.filter((e) => e.stage !== "completed" && e.stage !== "dormant");
+  const activeCount = active.length;
+  const totalCount = engagements.length;
+
+  if (activeCount === 0 && completedCount === 0) {
+    return { score: 0, label: "No activity", color: "text-muted-foreground", activeCount, completedCount, totalCount };
+  }
+
+  // Average stage weight of active engagements only
+  let score: number;
+  if (activeCount > 0) {
+    const sum = active.reduce((acc, e) => acc + (STAGE_WEIGHTS[e.stage as string] ?? 0), 0);
+    score = Math.round(sum / activeCount);
+  } else {
+    // All completed, no active — base score from completed count
+    score = Math.min(completedCount * 20, 100);
+  }
+
+  let label: string;
+  let color: string;
+  if (score <= 25) { label = "Exploring"; color = "text-blue-500"; }
+  else if (score <= 50) { label = "Developing"; color = "text-amber-500"; }
+  else if (score <= 75) { label = "Strong"; color = "text-green-500"; }
+  else { label = "Strategic"; color = "text-yellow-500"; }
+
+  return { score, label, color, activeCount, completedCount, totalCount };
+}
+
 export function generateAlerts(slaResults: SLAResult[]): Array<{
   type: "overdue" | "at_risk" | "info";
   title: string;

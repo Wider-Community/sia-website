@@ -75,24 +75,6 @@ export function OrganizationListPage() {
         },
       },
       {
-        id: "source",
-        header: "Source",
-        cell: ({ row }) => {
-          const sources = (row.original as any).data_sources as string[] | undefined;
-          if (!sources?.length) return <Badge variant="outline" className="text-xs">Manual</Badge>;
-          return (
-            <div className="flex flex-wrap gap-1">
-              {sources.slice(0, 2).map((s: string) => (
-                <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
-              ))}
-              {sources.length > 2 && (
-                <Badge variant="secondary" className="text-xs">+{sources.length - 2}</Badge>
-              )}
-            </div>
-          );
-        },
-      },
-      {
         accessorKey: "status",
         header: "Status",
         cell: ({ getValue }) => {
@@ -167,7 +149,6 @@ export function OrganizationListPage() {
             <SelectItem value="investor">Investor</SelectItem>
             <SelectItem value="vendor">Vendor</SelectItem>
             <SelectItem value="client">Client</SelectItem>
-            <SelectItem value="market_entity">Market Entity</SelectItem>
           </SelectContent>
         </Select>
         <Select

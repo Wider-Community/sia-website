@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { AnimatedTabContent } from "../../components/AnimatedTabContent";
 import { Button } from "@/components/ui/button";
+import { computeEngagementLevel } from "../../lib/sla-engine";
 import { AnimatedButton } from "../../components/AnimatedButton";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ import {
   StickyNote,
   Download,
   Plus,
+  Layers,
   Mail,
   Link2,
   ArrowRight,
@@ -58,6 +60,8 @@ export function OrganizationDetailPage() {
   const files = useList({ resource: "files", filters: [{ field: "organizationId", operator: "eq", value: id }], pagination: { mode: "off" } });
   const notes = useList({ resource: "notes", filters: [{ field: "organizationId", operator: "eq", value: id }], sorters: [{ field: "createdAt", order: "desc" }], pagination: { mode: "off" } });
   const events = useList({ resource: "activity-events", filters: [{ field: "organizationId", operator: "eq", value: id }], sorters: [{ field: "createdAt", order: "desc" }], pagination: { mode: "off" } });
+  const engagements = useList({ resource: "engagements", filters: [{ field: "organizationId", operator: "eq", value: id }], pagination: { mode: "off" } });
+  const engLevel = computeEngagementLevel(engagements.result?.data ?? []);
 
   const { data: attributesData, isLoading: attributesLoading } = useCustom({
     url: `/api/nodes/${id}/attributes`,
@@ -166,6 +170,12 @@ export function OrganizationDetailPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="engagements">
+            <Layers className="mr-1 h-4 w-4" /> Engagements ({engagements.result?.total ?? 0})
+            {engLevel.score > 0 && (
+              <Badge variant="outline" className={`ml-1.5 text-[10px] ${engLevel.color}`}>{engLevel.label}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="contacts">
             <Users className="mr-1 h-4 w-4" /> Contacts ({contacts.result?.total ?? 0})
           </TabsTrigger>
@@ -233,7 +243,7 @@ export function OrganizationDetailPage() {
                 {(org as any).team_size && (
                   <div>
                     <dt className="text-sm font-medium text-muted-foreground">Team Size</dt>
-                    <dd>{(org as any).team_size}{(org as any).team_size_source ? <span className="ml-1 text-xs text-muted-foreground">({(org as any).team_size_source})</span> : null}</dd>
+                    <dd>{(org as any).team_size}</dd>
                   </div>
                 )}
 
@@ -302,17 +312,65 @@ export function OrganizationDetailPage() {
                   </div>
                 )}
 
-                {(org as any).data_sources?.length > 0 && (
-                  <div className="sm:col-span-2">
-                    <dt className="text-sm font-medium text-muted-foreground">Data Sources</dt>
-                    <dd className="flex flex-wrap gap-1 mt-1">
-                      {((org as any).data_sources as string[]).map((src: string) => (
-                        <Badge key={src} variant="outline" className="text-xs">{src}</Badge>
-                      ))}
-                    </dd>
-                  </div>
-                )}
               </dl>
+            </CardContent>
+          </Card>
+        </AnimatedTabContent>
+
+        {/* Engagements */}
+        <AnimatedTabContent activeValue={activeTab} value="engagements">
+          <Card>
+            <CardContent className="pt-6">
+              {/* Engagement Level Badge */}
+              {engLevel.totalCount > 0 && (
+                <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-muted/50">
+                  <div className={`text-2xl font-bold ${engLevel.color}`}>{engLevel.score}%</div>
+                  <div>
+                    <div className={`font-medium ${engLevel.color}`}>{engLevel.label}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {engLevel.activeCount} active, {engLevel.completedCount} completed
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end mb-4">
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={`/portal/engagements/create?organizationId=${id}&organizationName=${encodeURIComponent(org?.name as string ?? "")}`}>
+                    <Plus className="mr-2 h-4 w-4" /> New Engagement
+                  </Link>
+                </Button>
+              </div>
+              {engagements.query.isLoading ? (
+                <TableSkeleton rows={3} columns={4} />
+              ) : (engagements.result?.data?.length ?? 0) > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Stage</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Target</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {engagements.result!.data.map((e: BaseRecord) => {
+                      const stageCfg: Record<string, string> = { prospect: "outline", in_progress: "secondary", negotiating: "secondary", formalized: "default", active: "default", completed: "outline", dormant: "outline" };
+                      return (
+                        <TableRow key={e.id as string} className="cursor-pointer" onClick={() => navigate(`/portal/engagements/${e.id}`)}>
+                          <TableCell className="font-medium">{e.title as string}</TableCell>
+                          <TableCell><Badge variant={(stageCfg[e.stage as string] ?? "outline") as "default" | "secondary" | "outline" | "destructive"}>{(e.stage as string)?.replace(/_/g, " ")}</Badge></TableCell>
+                          <TableCell><Badge variant="secondary" className="capitalize">{(e.category as string)?.replace(/_/g, " ")}</Badge></TableCell>
+                          <TableCell><Badge variant={(e.priority as string) === "high" || (e.priority as string) === "critical" ? "destructive" : "outline"}>{e.priority as string}</Badge></TableCell>
+                          <TableCell className="text-muted-foreground">{e.targetDate ? new Date(e.targetDate as string).toLocaleDateString() : "—"}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <EmptyState icon={Layers} title="No engagements yet" description="Create an engagement to track deals, projects, and initiatives with this organization." />
+              )}
             </CardContent>
           </Card>
         </AnimatedTabContent>

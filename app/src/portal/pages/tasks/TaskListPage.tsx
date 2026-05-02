@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowUpDown, ChevronLeft, ChevronRight, CheckSquare } from "lucide-react";
+import { Plus, ArrowUpDown, ChevronLeft, ChevronRight, CheckSquare, LayoutGrid } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageShell } from "../../components/PageShell";
@@ -145,10 +145,16 @@ export function TaskListPage() {
       <PageHeader
         title="Tasks"
         actions={
-          <AnimatedButton onClick={() => navigate("/portal/tasks/create")}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Task
-          </AnimatedButton>
+          <>
+            <AnimatedButton variant="outline" onClick={() => navigate("/portal/tasks/board")}>
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              Board View
+            </AnimatedButton>
+            <AnimatedButton onClick={() => navigate("/portal/tasks/create")}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Task
+            </AnimatedButton>
+          </>
         }
       />
 

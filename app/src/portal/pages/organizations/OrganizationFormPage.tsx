@@ -26,7 +26,7 @@ import { LocationEditor } from "../../components/LocationEditor";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  type: z.enum(["partner", "investor", "vendor", "client", "market_entity"]),
+  type: z.enum(["partner", "investor", "vendor", "client"]),
   status: z.enum(["active", "inactive", "prospect"]),
   locations: z.array(z.object({
     id: z.string(),
@@ -108,7 +108,6 @@ export function OrganizationFormPage() {
                     <SelectItem value="investor">Investor</SelectItem>
                     <SelectItem value="vendor">Vendor</SelectItem>
                     <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="market_entity">Market Entity</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

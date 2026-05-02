@@ -21,6 +21,7 @@ import { NewSigningRequestPage } from "@/portal/pages/signing/NewSigningRequestP
 import { SigningDetailPage } from "@/portal/pages/signing/SigningDetailPage";
 import { PublicSigningPage } from "@/portal/pages/signing/PublicSigningPage";
 import { TaskListPage } from "@/portal/pages/tasks/TaskListPage";
+import { TaskBoardPage } from "@/portal/pages/tasks/TaskBoardPage";
 import { TaskCreatePage } from "@/portal/pages/tasks/TaskCreatePage";
 import { SlaSettingsPage } from "@/portal/pages/settings/SlaSettingsPage";
 import { PipelinePage } from "@/portal/pages/pipeline/PipelinePage";
@@ -111,6 +112,7 @@ export const router = createBrowserRouter([
           { path: "/portal/signing/new", element: <NewSigningRequestPage /> },
           { path: "/portal/signing/:id", element: <SigningDetailPage /> },
           { path: "/portal/tasks", element: <TaskListPage /> },
+          { path: "/portal/tasks/board", element: <TaskBoardPage /> },
           { path: "/portal/tasks/create", element: <TaskCreatePage /> },
           { path: "/portal/settings/sla", element: <SlaSettingsPage /> },
         ],
