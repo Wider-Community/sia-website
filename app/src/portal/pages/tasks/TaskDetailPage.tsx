@@ -131,7 +131,7 @@ export function TaskDetailPage() {
                     onClick={() => navigate(`/portal/organizations/${task.organizationId}`)}
                   >
                     <Building2 className="mr-1 h-3 w-3" />
-                    {(task.organizationName as string) || (task.organizationId as string)}
+                    {(task.organizationName as string) || "Unknown"}
                   </Button>
                 ) : (
                   "—"
@@ -148,7 +148,7 @@ export function TaskDetailPage() {
                     onClick={() => navigate(`/portal/engagements/${task.engagementId}`)}
                   >
                     <Layers className="mr-1 h-3 w-3" />
-                    {(task.engagementName as string) || (task.engagementId as string)}
+                    {(task.engagementName as string) || "Unknown"}
                   </Button>
                 ) : (
                   "—"

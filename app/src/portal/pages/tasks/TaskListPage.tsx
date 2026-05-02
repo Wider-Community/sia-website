@@ -83,7 +83,7 @@ export function TaskListPage() {
               className="text-primary underline-offset-4 hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
-              {orgName || String(orgId)}
+              {orgName || "Unknown"}
             </Link>
           );
         },
@@ -101,7 +101,7 @@ export function TaskListPage() {
               className="text-primary underline-offset-4 hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
-              {engName || String(engId)}
+              {engName || "Unknown"}
             </Link>
           );
         },

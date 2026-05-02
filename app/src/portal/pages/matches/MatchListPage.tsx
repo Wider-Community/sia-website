@@ -72,7 +72,7 @@ export function MatchListPage() {
         header: "Organization A",
         cell: ({ getValue }) => {
           const id = getValue<string>();
-          const name = orgMap[id] ?? id;
+          const name = orgMap[id] ?? "Unknown";
           return (
             <Link
               to={`/portal/organizations/${id}`}
@@ -89,7 +89,7 @@ export function MatchListPage() {
         header: "Organization B",
         cell: ({ getValue }) => {
           const id = getValue<string>();
-          const name = orgMap[id] ?? id;
+          const name = orgMap[id] ?? "Unknown";
           return (
             <Link
               to={`/portal/organizations/${id}`}

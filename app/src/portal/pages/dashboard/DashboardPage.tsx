@@ -163,7 +163,7 @@ export function PortalDashboardPage() {
   const timelineEvents: TimelineEvent[] = eventData.slice(0, 8).map((e: BaseRecord) => ({
     id: e.id as string,
     title: `${capitalize(e.action as string)} ${e.entityType as string}`,
-    description: e.entityName as string,
+    description: (e.entityName as string) || orgMap.get(e.entityId as string) || "Unknown",
     timestamp: e.createdAt as string,
     variant: (e.action as string) === "deleted" ? "destructive" as const : "default" as const,
   }));
@@ -175,7 +175,7 @@ export function PortalDashboardPage() {
       className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground"
     >
       <span className="font-medium text-foreground">{capitalize(e.action as string)}</span>
-      {e.entityName as string}
+      {(e.entityName as string) || orgMap.get(e.entityId as string) || "Unknown"}
     </span>
   ));
 
@@ -348,7 +348,7 @@ export function PortalDashboardPage() {
                         <p className="text-sm font-medium truncate">{task.title as string}</p>
                         <p className="text-xs text-muted-foreground">
                           Due: {new Date(task.dueDate as string).toLocaleDateString()}
-                          {task.organizationName && ` · ${task.organizationName}`}
+                          {(task.organizationName || orgMap.get(task.organizationId as string)) && ` · ${(task.organizationName as string) || orgMap.get(task.organizationId as string)}`}
                         </p>
                       </div>
                       <Badge
@@ -425,8 +425,8 @@ export function PortalDashboardPage() {
                 </TableHeader>
                 <TableBody>
                   {recentMatches.map((m: BaseRecord) => {
-                    const orgAName = orgMap.get(m.organizationAId as string) ?? (m.organizationAName as string) ?? "Org A";
-                    const orgBName = orgMap.get(m.organizationBId as string) ?? (m.organizationBName as string) ?? "Org B";
+                    const orgAName = orgMap.get(m.organizationAId as string) ?? (m.organizationAName as string) ?? "Unknown";
+                    const orgBName = orgMap.get(m.organizationBId as string) ?? (m.organizationBName as string) ?? "Unknown";
                     const status = m.status as string;
                     const statusColor: Record<string, string> = {
                       pending: "bg-yellow-500 hover:bg-yellow-600 text-white",

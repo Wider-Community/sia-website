@@ -724,7 +724,7 @@ export function OrganizationDetailPage() {
                     {orgMatches.map((m: BaseRecord) => {
                       const isA = m.organizationAId === id;
                       const otherId = isA ? (m.organizationBId as string) : (m.organizationAId as string);
-                      const otherName = orgMap.get(otherId) ?? (isA ? (m.organizationBName as string) : (m.organizationAName as string)) ?? otherId;
+                      const otherName = orgMap.get(otherId) ?? (isA ? (m.organizationBName as string) : (m.organizationAName as string)) ?? "Unknown";
                       const status = m.status as string;
                       const statusColor: Record<string, string> = {
                         pending: "bg-yellow-500 hover:bg-yellow-600 text-white",
@@ -800,7 +800,7 @@ export function OrganizationDetailPage() {
                   events={(events.result?.data ?? []).map((e: BaseRecord) => ({
                     id: e.id as string,
                     title: `${((e.action as string) ?? "").charAt(0).toUpperCase()}${((e.action as string) ?? "").slice(1)} ${e.entityType as string}`,
-                    description: e.entityName as string,
+                    description: (e.entityName as string) || orgMap.get(e.entityId as string) || "Unknown",
                     timestamp: e.createdAt as string,
                     variant: (e.action as string) === "deleted" ? "destructive" as const : "default" as const,
                   } satisfies TimelineEvent))}
@@ -847,7 +847,7 @@ export function OrganizationDetailPage() {
                               className="h-auto p-0"
                               onClick={() => navigate(`/portal/organizations/${targetId}`)}
                             >
-                              {targetId} <ArrowRight className="ml-1 h-3 w-3" />
+                              {orgMap.get(targetId) || "Unknown"} <ArrowRight className="ml-1 h-3 w-3" />
                             </Button>
                           </TableCell>
                           <TableCell>

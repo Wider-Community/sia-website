@@ -60,6 +60,49 @@ const TYPE_OPTIONS: TypeOption[] = [
   { type: "match", label: "Match", icon: Link2 },
 ];
 
+// Types that require an organization context
+const REQUIRES_ORG: EntityType[] = ["task", "note", "contact", "engagement"];
+
+// ── Organization Selector ──
+
+function OrganizationSelector({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (id: string, name: string) => void;
+}) {
+  const { data: orgsData } = useList({
+    resource: "organizations",
+    pagination: { pageSize: 100 },
+  });
+  const orgs = (orgsData?.data ?? []) as { id: string; name: string }[];
+
+  return (
+    <div className="space-y-2">
+      <Label>Organization *</Label>
+      <Select
+        value={value}
+        onValueChange={(id) => {
+          const org = orgs.find((o) => o.id === id);
+          if (org) onChange(org.id, org.name);
+        }}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select organization" />
+        </SelectTrigger>
+        <SelectContent>
+          {orgs.map((o) => (
+            <SelectItem key={o.id} value={o.id}>
+              {o.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 // ── Type Selector ──
 
 function LucidTypeSelector({ onSelect }: { onSelect: (t: EntityType) => void }) {
@@ -98,7 +141,7 @@ function TaskForm({
   onSuccess,
   onCancel,
 }: {
-  context?: LucidContext;
+  context: LucidContext;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -118,10 +161,10 @@ function TaskForm({
           dueDate,
           priority,
           status: "open",
-          organizationId: context?.organizationId ?? "",
-          organizationName: context?.organizationName ?? "",
-          engagementId: context?.engagementId ?? "",
-          engagementName: context?.engagementName ?? "",
+          organizationId: context.organizationId ?? "",
+          organizationName: context.organizationName ?? "",
+          engagementId: context.engagementId ?? "",
+          engagementName: context.engagementName ?? "",
         },
       },
       {
@@ -136,10 +179,10 @@ function TaskForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {context?.organizationName && (
+      {context.organizationName && (
         <ContextBadge label="Organization" value={context.organizationName} />
       )}
-      {context?.engagementName && (
+      {context.engagementName && (
         <ContextBadge label="Engagement" value={context.engagementName} />
       )}
       <div className="space-y-2">
@@ -190,7 +233,7 @@ function EngagementForm({
   onSuccess,
   onCancel,
 }: {
-  context?: LucidContext;
+  context: LucidContext;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -210,7 +253,7 @@ function EngagementForm({
           category,
           stage,
           priority: "medium",
-          organizationId: context?.organizationId ?? "",
+          organizationId: context.organizationId ?? "",
           createdBy: "current-user",
         },
       },
@@ -226,7 +269,7 @@ function EngagementForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {context?.organizationName && (
+      {context.organizationName && (
         <ContextBadge label="Organization" value={context.organizationName} />
       )}
       <div className="space-y-2">
@@ -263,29 +306,49 @@ function EngagementForm({
 
 // ── Note Form ──
 
+type NoteSubType = "organization" | "engagement";
+
 function NoteForm({
   context,
   onSuccess,
   onCancel,
 }: {
-  context?: LucidContext;
+  context: LucidContext;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
   const [content, setContent] = useState("");
+  const [subType, setSubType] = useState<NoteSubType>(
+    context.engagementId ? "engagement" : "organization",
+  );
+  const [selectedEngagementId, setSelectedEngagementId] = useState(
+    context.engagementId ?? "",
+  );
   const { mutate, isLoading } = useCreate();
+
+  // Fetch engagements filtered by the selected org
+  const { data: engagementsData } = useList({
+    resource: "engagements",
+    filters: context.organizationId
+      ? [{ field: "organizationId", operator: "eq", value: context.organizationId }]
+      : [],
+    pagination: { pageSize: 100 },
+    queryOptions: { enabled: subType === "engagement" && !!context.organizationId },
+  });
+  const engagements = (engagementsData?.data ?? []) as { id: string; title: string }[];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
+    if (subType === "engagement" && !selectedEngagementId) return;
     mutate(
       {
         resource: "notes",
         values: {
           content: content.trim(),
           createdBy: "current-user",
-          organizationId: context?.organizationId ?? "",
-          engagementId: context?.engagementId ?? "",
+          organizationId: context.organizationId ?? "",
+          engagementId: subType === "engagement" ? selectedEngagementId : "",
         },
       },
       {
@@ -300,12 +363,50 @@ function NoteForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {context?.organizationName && (
+      {context.organizationName && (
         <ContextBadge label="Organization" value={context.organizationName} />
       )}
-      {context?.engagementName && (
-        <ContextBadge label="Engagement" value={context.engagementName} />
+
+      {/* Note sub-type selector */}
+      <div className="space-y-2">
+        <Label>Note Type</Label>
+        <Select value={subType} onValueChange={(v) => {
+          setSubType(v as NoteSubType);
+          if (v === "organization") setSelectedEngagementId("");
+        }}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="organization">Organization Note</SelectItem>
+            <SelectItem value="engagement">Engagement Note</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Engagement selector for engagement notes */}
+      {subType === "engagement" && (
+        <div className="space-y-2">
+          <Label>Engagement *</Label>
+          {context.engagementName ? (
+            <ContextBadge label="" value={context.engagementName} />
+          ) : (
+            <Select value={selectedEngagementId} onValueChange={setSelectedEngagementId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select engagement" />
+              </SelectTrigger>
+              <SelectContent>
+                {engagements.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       )}
+
       <div className="space-y-2">
         <Label htmlFor="note-content">Content *</Label>
         <Textarea
@@ -318,7 +419,12 @@ function NoteForm({
           autoFocus
         />
       </div>
-      <FormActions type="Note" isLoading={isLoading} onCancel={onCancel} />
+      <FormActions
+        type="Note"
+        isLoading={isLoading}
+        onCancel={onCancel}
+        disabled={subType === "engagement" && !selectedEngagementId}
+      />
     </form>
   );
 }
@@ -330,7 +436,7 @@ function ContactForm({
   onSuccess,
   onCancel,
 }: {
-  context?: LucidContext;
+  context: LucidContext;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -349,7 +455,7 @@ function ContactForm({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.trim() || undefined,
-          organizationId: context?.organizationId ?? "",
+          organizationId: context.organizationId ?? "",
         },
       },
       {
@@ -364,7 +470,7 @@ function ContactForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {context?.organizationName && (
+      {context.organizationName && (
         <ContextBadge label="Organization" value={context.organizationName} />
       )}
       <div className="grid grid-cols-2 gap-4">
@@ -521,17 +627,19 @@ function FormActions({
   type,
   isLoading,
   onCancel,
+  disabled,
 }: {
   type: string;
   isLoading: boolean;
   onCancel: () => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex justify-end gap-2 pt-2">
       <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
         Cancel
       </Button>
-      <Button type="submit" disabled={isLoading}>
+      <Button type="submit" disabled={isLoading || disabled}>
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Create {type}
       </Button>
@@ -548,7 +656,7 @@ function LucidInlineForm({
   onCancel,
 }: {
   type: EntityType;
-  context?: LucidContext;
+  context: LucidContext;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -566,6 +674,71 @@ function LucidInlineForm({
       {type === "note" && <NoteForm context={context} onSuccess={onSuccess} onCancel={onCancel} />}
       {type === "contact" && <ContactForm context={context} onSuccess={onSuccess} onCancel={onCancel} />}
       {type === "match" && <MatchForm context={context} onSuccess={onSuccess} onCancel={onCancel} />}
+    </div>
+  );
+}
+
+// ── Organization Gate ──
+// For types that require an org, show a selector if no context is pre-filled
+
+function OrganizationGate({
+  type,
+  context,
+  onSuccess,
+  onCancel,
+}: {
+  type: EntityType;
+  context?: LucidContext;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const [selectedOrgId, setSelectedOrgId] = useState(context?.organizationId ?? "");
+  const [selectedOrgName, setSelectedOrgName] = useState(context?.organizationName ?? "");
+
+  const needsOrgSelector = REQUIRES_ORG.includes(type) && !context?.organizationId;
+  const hasOrg = !!selectedOrgId;
+
+  const effectiveContext: LucidContext = {
+    ...context,
+    organizationId: selectedOrgId || context?.organizationId,
+    organizationName: selectedOrgName || context?.organizationName,
+  };
+
+  return (
+    <div className="space-y-4">
+      {needsOrgSelector && (
+        <OrganizationSelector
+          value={selectedOrgId}
+          onChange={(id, name) => {
+            setSelectedOrgId(id);
+            setSelectedOrgName(name);
+          }}
+        />
+      )}
+      {(hasOrg || !needsOrgSelector) ? (
+        <LucidInlineForm
+          type={type}
+          context={effectiveContext}
+          onSuccess={onSuccess}
+          onCancel={onCancel}
+        />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            {(() => {
+              const TypeIcon = TYPE_OPTIONS.find((t) => t.type === type)!.icon;
+              return <TypeIcon className="h-4 w-4 text-muted-foreground" />;
+            })()}
+            <span className="text-sm font-medium">
+              New {TYPE_OPTIONS.find((t) => t.type === type)!.label}
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Select an organization above to continue.
+          </p>
+          <FormActions type={TYPE_OPTIONS.find((t) => t.type === type)!.label} isLoading={false} onCancel={onCancel} disabled />
+        </div>
+      )}
     </div>
   );
 }
@@ -611,7 +784,7 @@ export function LucidButton({ context }: { context?: LucidContext }) {
         {selectedType === null ? (
           <LucidTypeSelector onSelect={setSelectedType} />
         ) : (
-          <LucidInlineForm
+          <OrganizationGate
             type={selectedType}
             context={context}
             onSuccess={handleSuccess}

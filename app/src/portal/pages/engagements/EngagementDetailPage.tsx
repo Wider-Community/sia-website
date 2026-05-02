@@ -235,7 +235,7 @@ export function EngagementDetailPage() {
                         onClick={() => navigate(`/portal/organizations/${eng.organizationId}`)}
                       >
                         <Building2 className="mr-1 h-3 w-3" />
-                        {orgName || (eng.organizationId as string)}
+                        {orgName || "Unknown"}
                       </Button>
                     ) : (
                       "—"
@@ -399,7 +399,7 @@ export function EngagementDetailPage() {
                   events={(events.result?.data ?? []).map((e: BaseRecord) => ({
                     id: e.id as string,
                     title: `${((e.action as string) ?? "").charAt(0).toUpperCase()}${((e.action as string) ?? "").slice(1)} ${e.entityType as string}`,
-                    description: e.entityName as string,
+                    description: (e.entityName as string) || "Unknown",
                     timestamp: e.createdAt as string,
                     variant: (e.action as string) === "deleted" ? "destructive" as const : "default" as const,
                   } satisfies TimelineEvent))}
