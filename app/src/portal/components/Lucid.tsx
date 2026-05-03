@@ -72,11 +72,11 @@ function OrganizationSelector({
   value: string;
   onChange: (id: string, name: string) => void;
 }) {
-  const { data: orgsData } = useList({
+  const { result: orgsResult } = useList({
     resource: "organizations",
     pagination: { pageSize: 100 },
   });
-  const orgs = (orgsData?.data ?? []) as { id: string; name: string }[];
+  const orgs = (orgsResult?.data ?? []) as { id: string; name: string }[];
 
   return (
     <div className="space-y-2">
@@ -148,7 +148,9 @@ function TaskForm({
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("medium");
-  const { mutate, isLoading } = useCreate();
+  const createHook = useCreate();
+  const mutate = createHook.mutate;
+  const isLoading = (createHook as unknown as { isPending: boolean }).isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,7 +242,9 @@ function EngagementForm({
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("deal");
   const [stage] = useState("prospect");
-  const { mutate, isLoading } = useCreate();
+  const createHook = useCreate();
+  const mutate = createHook.mutate;
+  const isLoading = (createHook as unknown as { isPending: boolean }).isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,10 +328,12 @@ function NoteForm({
   const [selectedEngagementId, setSelectedEngagementId] = useState(
     context.engagementId ?? "",
   );
-  const { mutate, isLoading } = useCreate();
+  const createHook = useCreate();
+  const mutate = createHook.mutate;
+  const isLoading = (createHook as unknown as { isPending: boolean }).isPending;
 
   // Fetch engagements filtered by the selected org
-  const { data: engagementsData } = useList({
+  const { result: engagementsResult } = useList({
     resource: "engagements",
     filters: context.organizationId
       ? [{ field: "organizationId", operator: "eq", value: context.organizationId }]
@@ -335,7 +341,7 @@ function NoteForm({
     pagination: { pageSize: 100 },
     queryOptions: { enabled: subType === "engagement" && !!context.organizationId },
   });
-  const engagements = (engagementsData?.data ?? []) as { id: string; title: string }[];
+  const engagements = (engagementsResult?.data ?? []) as { id: string; title: string }[];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -443,7 +449,9 @@ function ContactForm({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const { mutate, isLoading } = useCreate();
+  const createHook = useCreate();
+  const mutate = createHook.mutate;
+  const isLoading = (createHook as unknown as { isPending: boolean }).isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -525,13 +533,15 @@ function MatchForm({
   const [orgBId, setOrgBId] = useState("");
   const [score, setScore] = useState("50");
   const [reason, setReason] = useState("");
-  const { mutate, isLoading } = useCreate();
+  const createHook = useCreate();
+  const mutate = createHook.mutate;
+  const isLoading = (createHook as unknown as { isPending: boolean }).isPending;
 
-  const { data: orgsData } = useList({
+  const { result: orgsResult } = useList({
     resource: "organizations",
     pagination: { pageSize: 100 },
   });
-  const orgs = (orgsData?.data ?? []) as { id: string; name: string }[];
+  const orgs = (orgsResult?.data ?? []) as { id: string; name: string }[];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

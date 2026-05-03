@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
 import { PageShell } from "../../components/PageShell";
 import { PageHeader } from "../../components/PageHeader";
 
@@ -51,8 +50,12 @@ export function ContactFormPage() {
     queryOptions: { enabled: isEdit },
   });
 
-  const { mutate: createContact, isLoading: isCreating } = useCreate();
-  const { mutate: updateContact, isLoading: isUpdating } = useUpdate();
+  const createHook = useCreate();
+  const createContact = createHook.mutate;
+  const isCreating = (createHook as unknown as { isPending: boolean }).isPending;
+  const updateHook = useUpdate();
+  const updateContact = updateHook.mutate;
+  const isUpdating = (updateHook as unknown as { isPending: boolean }).isPending;
 
   const {
     register,

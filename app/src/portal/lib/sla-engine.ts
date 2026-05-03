@@ -27,7 +27,7 @@ export function evaluateSLA(
   const results: SLAResult[] = [];
 
   for (const rule of rules) {
-    const matchingEntities = entities.filter((e) => {
+    const matchingEntities = entities.filter((_e) => {
       if (rule.entityType === "organization") return true;
       if (rule.entityType === "task") return true;
       if (rule.entityType === "signing-request") return true;

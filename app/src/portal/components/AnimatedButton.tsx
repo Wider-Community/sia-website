@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 import { Loader2, Check } from "lucide-react";
 import type { VariantProps } from "class-variance-authority";
 
-const MotionButton = motion.create(Button);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MotionButton = motion.create(Button) as any;
 
 interface AnimatedButtonProps
   extends React.ComponentProps<typeof Button>,

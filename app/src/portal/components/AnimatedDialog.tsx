@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion, type Transition } from "framer-motion";
 import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +24,7 @@ const contentVariants = {
   exit: { opacity: 0, scale: 0.95 },
 };
 
-const transition = { duration: 0.2, ease: [0.16, 1, 0.3, 1] };
+const transition: Transition = { duration: 0.2, ease: [0.16, 1, 0.3, 1] };
 
 // ---- Dialog ---------------------------------------------------------------
 

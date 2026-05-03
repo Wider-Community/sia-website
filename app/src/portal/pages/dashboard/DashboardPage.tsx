@@ -63,7 +63,7 @@ export function PortalDashboardPage() {
   const slaRules = useList({ resource: "sla-rules", pagination: { mode: "off" } });
   const matches = useList({
     resource: "matches",
-    pagination: { current: 1, pageSize: 5 },
+    pagination: { currentPage: 1, pageSize: 5 },
     sorters: [{ field: "createdAt", order: "desc" }],
   });
   const allMatches = useList({ resource: "matches", pagination: { mode: "off" } });
