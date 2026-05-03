@@ -25,7 +25,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  ArrowLeft,
   Pencil,
   Trash2,
   Globe,
@@ -82,10 +81,12 @@ export function OrganizationDetailPage() {
     return map;
   }, [allOrgs.result?.data]);
 
-  const { data: attributesData, isLoading: attributesLoading } = useCustom({
+  const attributesQuery = useCustom({
     url: `/api/nodes/${id}/attributes`,
     method: "get",
   });
+  const attributesData = (attributesQuery as any).data;
+  const attributesLoading = (attributesQuery as any).isLoading;
 
   // Also fetch incoming attributes (where this org is the target)
   // For now, the outgoing attributes from the node are sufficient
@@ -131,12 +132,6 @@ export function OrganizationDetailPage() {
       </div>
     );
   }
-
-  const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
-    active: "default",
-    prospect: "secondary",
-    inactive: "outline",
-  };
 
   return (
     <PageShell loading={orgQuery.isLoading}>

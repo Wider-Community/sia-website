@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { AnimatedButton } from "../../components/AnimatedButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { AnimatedInput } from "../../components/AnimatedInput";
 import { AnimatedTextarea } from "../../components/AnimatedTextarea";
 import {
@@ -21,7 +20,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Copy,
-  Loader2,
   Plus,
   Trash2,
   Upload,

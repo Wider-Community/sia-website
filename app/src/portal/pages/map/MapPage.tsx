@@ -208,7 +208,7 @@ export function MapPage() {
                   coordinates={m.coordinates}
                   onClick={() => navigate(`/portal/organizations/${m.orgId}`)}
                   onMouseEnter={(e) => {
-                    const target = e.target as SVGElement;
+                    const target = e.target as SVGSVGElement;
                     const ctm = target.getScreenCTM();
                     setTooltip({
                       name: m.name,
@@ -220,7 +220,7 @@ export function MapPage() {
                     });
                   }}
                   onMouseLeave={() => setTooltip(null)}
-                  style={{ cursor: "pointer" }}
+                  style={{ default: { cursor: "pointer" } } as any}
                 >
                   <circle
                     r={m.isDefault ? 6 : 4}

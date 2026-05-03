@@ -1,5 +1,5 @@
 import { useOne, useDelete } from "@refinedev/core";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +15,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Pencil, Trash2, Building2, Layers, CalendarDays, User } from "lucide-react";
-import type { BaseRecord } from "@refinedev/core";
 import { PageShell } from "../../components/PageShell";
 import { PageHeader } from "../../components/PageHeader";
 

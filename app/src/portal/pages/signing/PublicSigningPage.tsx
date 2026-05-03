@@ -12,10 +12,10 @@ import {
 import { mujarradDataProvider } from "../../providers/mujarrad-data-provider";
 import { Button } from "@/components/ui/button";
 import { AnimatedButton } from "../../components/AnimatedButton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, Clock, FileSignature, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, FileSignature, XCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,

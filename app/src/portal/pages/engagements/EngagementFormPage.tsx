@@ -115,7 +115,7 @@ export function EngagementFormPage() {
           backTo="/portal/engagements"
         />
 
-        <form onSubmit={handleSubmit(handleFinish)} className="space-y-6">
+        <form onSubmit={handleSubmit(handleFinish as any)} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Engagement Details</CardTitle>

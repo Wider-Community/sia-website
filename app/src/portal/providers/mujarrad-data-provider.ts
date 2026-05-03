@@ -30,7 +30,7 @@ export const mujarradDataProvider: DataProvider = {
   },
 
   async getOne({ resource, id }) {
-    const record = await entityLayer.getEntity(resource, id);
+    const record = await entityLayer.getEntity(resource, String(id));
     return { data: record as any };
   },
 
@@ -45,14 +45,14 @@ export const mujarradDataProvider: DataProvider = {
   async update({ resource, id, variables }) {
     const record = await entityLayer.updateEntity(
       resource,
-      id,
+      String(id),
       variables as Record<string, unknown>,
     );
     return { data: record as any };
   },
 
   async deleteOne({ resource, id }) {
-    await entityLayer.deleteEntity(resource, id);
+    await entityLayer.deleteEntity(resource, String(id));
     return { data: { id } as any };
   },
 

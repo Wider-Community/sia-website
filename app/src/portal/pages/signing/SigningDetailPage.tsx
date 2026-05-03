@@ -42,14 +42,6 @@ import {
 import { assemblePdf, type FieldPlacement } from "../../lib/pdf-assembly";
 import { useState, useCallback } from "react";
 
-const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  draft: "outline",
-  sent: "secondary",
-  partially_signed: "secondary",
-  completed: "default",
-  cancelled: "destructive",
-};
-
 const statusLabel: Record<string, string> = {
   draft: "Draft",
   sent: "Sent",
@@ -182,7 +174,7 @@ export function SigningDetailPage() {
       const response = await fetch(req.pdfUrl as string);
       const pdfBytes = new Uint8Array(await response.arrayBuffer());
       const signedPdf = await assemblePdf(pdfBytes, signedFields);
-      const blob = new Blob([signedPdf], { type: "application/pdf" });
+      const blob = new Blob([signedPdf as unknown as BlobPart], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -195,7 +187,7 @@ export function SigningDetailPage() {
   }, [req, fieldsList]);
 
   if (reqQuery.isLoading) {
-    return <PageShell loading />;
+    return <PageShell loading>{null}</PageShell>;
   }
 
   if (!req) {

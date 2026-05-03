@@ -107,7 +107,7 @@ export function MatchCreatePage() {
       <div className="mx-auto max-w-2xl space-y-6">
         <PageHeader title="Create Match" backTo="/portal/matches" />
 
-        <form onSubmit={handleSubmit(handleFinish)} className="space-y-6">
+        <form onSubmit={handleSubmit(handleFinish as any)} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Match Details</CardTitle>

@@ -36,7 +36,6 @@ export function OrganizationFormPage() {
     refineCore: { formLoading, onFinish },
     register,
     handleSubmit,
-    control,
     setValue,
     watch,
     formState: { errors, isSubmitting },

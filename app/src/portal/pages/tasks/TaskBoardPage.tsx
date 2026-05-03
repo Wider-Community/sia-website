@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft } from "lucide-react";
 import type { Task, Engagement } from "../../schemas";
-import { ENGAGEMENT_STAGES } from "../../schemas";
 
 const STAGE_COLORS: Record<string, string> = {
   prospect: "#94a3b8",
