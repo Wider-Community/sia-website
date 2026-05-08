@@ -261,6 +261,24 @@ export const ENTITY_REGISTRY: Record<string, EntityDef> = {
     requiredFields: ["userId", "role"],
     relationships: [],
   },
+  "agent-suggestions": {
+    nodeType: "ASSUMPTION",
+    titleField: "title",
+    requiredFields: ["type", "title", "suggestedBy"],
+    relationships: [],
+  },
+  "publish-requests": {
+    nodeType: "ASSUMPTION",
+    titleField: "resourceName",
+    requiredFields: ["resourceName", "resourceType", "resourceId", "description", "requestedBy"],
+    relationships: [],
+  },
+  "notification-preferences": {
+    nodeType: "REGULAR",
+    titleField: "userId",
+    requiredFields: ["userId", "globalMute", "categories", "defaultChannels"],
+    relationships: [],
+  },
 };
 
 export function getEntityDef(resource: string): EntityDef | undefined {

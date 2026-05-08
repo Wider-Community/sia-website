@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -25,8 +25,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trash2, ShieldCheck, Search } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  ShieldCheck,
+  Search,
+  Check,
+  X,
+  Clock,
+  FileText,
+  RefreshCw,
+} from "lucide-react";
 import { useAuthorization } from "../../engine/hooks";
+import { getEntityLayer } from "../../engine/hooks-internal";
 import type {
   EngineRole,
   PermissionGrant,
@@ -836,17 +847,413 @@ function AuthorizationTestSection() {
 }
 
 // ---------------------------------------------------------------------------
+// Pending Approvals Queue Section (14.9)
+// ---------------------------------------------------------------------------
+
+interface PublishRequest {
+  id: string;
+  resourceName: string;
+  resourceType: string;
+  resourceId: string;
+  description: string;
+  requestedBy: string;
+  requestedAt: string;
+  status: "pending" | "approved" | "rejected";
+}
+
+function PendingApprovalsSection() {
+  const [requests, setRequests] = useState<PublishRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const entityLayer = getEntityLayer();
+      const result = await entityLayer.listEntities("publish-requests", {
+        filters: [
+          { field: "status", operator: "eq" as const, value: "pending" },
+        ],
+      });
+      setRequests(
+        result.data.map((r) => ({
+          id: r.id as string,
+          resourceName: (r.resourceName as string) ?? "Unknown",
+          resourceType: (r.resourceType as string) ?? "unknown",
+          resourceId: (r.resourceId as string) ?? "",
+          description: (r.description as string) ?? "",
+          requestedBy: (r.requestedBy as string) ?? "unknown",
+          requestedAt: (r.requestedAt as string) ?? new Date().toISOString(),
+          status: (r.status as PublishRequest["status"]) ?? "pending",
+        })),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch publish requests.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
+
+  const handleAction = useCallback(
+    async (requestId: string, action: "approved" | "rejected") => {
+      setActionInProgress(requestId);
+      setError(null);
+      try {
+        const entityLayer = getEntityLayer();
+        await entityLayer.updateEntity("publish-requests", requestId, {
+          status: action,
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: "control_board_admin",
+        });
+        setRequests((prev) => prev.filter((r) => r.id !== requestId));
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : `Failed to ${action} request.`,
+        );
+      } finally {
+        setActionInProgress(null);
+      }
+    },
+    [],
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-lg font-semibold">Pending Approvals Queue</h3>
+          {requests.length > 0 && (
+            <Badge variant="secondary">{requests.length}</Badge>
+          )}
+        </div>
+        <Button variant="outline" size="sm" onClick={fetchRequests} disabled={loading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Resource</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Requested By</TableHead>
+              <TableHead>Requested At</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 6 }).map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : requests.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  No pending publish requests.
+                </TableCell>
+              </TableRow>
+            ) : (
+              requests.map((req) => (
+                <TableRow key={req.id}>
+                  <TableCell className="font-medium">
+                    {req.resourceName}
+                  </TableCell>
+                  <TableCell>
+                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                      {req.resourceType}
+                    </code>
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                    {req.description}
+                  </TableCell>
+                  <TableCell className="text-sm">{req.requestedBy}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {new Date(req.requestedAt).toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-green-600 hover:bg-green-500/10 hover:text-green-700"
+                        disabled={actionInProgress === req.id}
+                        onClick={() => handleAction(req.id, "approved")}
+                        title="Approve"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:bg-destructive/10"
+                        disabled={actionInProgress === req.id}
+                        onClick={() => handleAction(req.id, "rejected")}
+                        title="Reject"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Audit Trail Viewer Section (14.10)
+// ---------------------------------------------------------------------------
+
+interface AuditEvent {
+  id: string;
+  timestamp: string;
+  userId: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  allowed: boolean;
+  reason: string;
+}
+
+function AuditTrailSection() {
+  const [events, setEvents] = useState<AuditEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [filterUserId, setFilterUserId] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const entityLayer = getEntityLayer();
+      const filters: Array<{ field: string; operator: "eq"; value: unknown }> = [
+        { field: "action", operator: "eq" as const, value: "auth_check" },
+      ];
+      if (filterUserId.trim()) {
+        filters.push({
+          field: "performedBy",
+          operator: "eq" as const,
+          value: filterUserId.trim(),
+        });
+      }
+
+      const result = await entityLayer.listEntities("activity-events", {
+        filters,
+        sorters: [{ field: "createdAt", order: "desc" as const }],
+        pagination: { current: 1, pageSize: 50 },
+      });
+
+      let parsed = result.data.map((r) => {
+        const details = (r.details ?? {}) as Record<string, unknown>;
+        return {
+          id: r.id as string,
+          timestamp: (r.createdAt as string) ?? (r.performedAt as string) ?? "",
+          userId: (r.performedBy as string) ?? "",
+          action: (details.requestedAction as string) ?? (r.action as string) ?? "",
+          resourceType: (r.entityType as string) ?? "",
+          resourceId: (r.entityId as string) ?? "",
+          allowed: (details.allowed as boolean) ?? false,
+          reason: (details.reason as string) ?? "",
+        };
+      });
+
+      // Client-side date range filter (in case the entity layer doesn't support range queries)
+      if (filterDateFrom) {
+        const from = new Date(filterDateFrom).getTime();
+        parsed = parsed.filter(
+          (e) => e.timestamp && new Date(e.timestamp).getTime() >= from,
+        );
+      }
+      if (filterDateTo) {
+        const to = new Date(filterDateTo).getTime() + 86400000; // end of day
+        parsed = parsed.filter(
+          (e) => e.timestamp && new Date(e.timestamp).getTime() <= to,
+        );
+      }
+
+      setEvents(parsed);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch audit events.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [filterUserId, filterDateFrom, filterDateTo]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <FileText className="h-5 w-5 text-muted-foreground" />
+        <h3 className="text-lg font-semibold">Audit Trail</h3>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="audit-user-filter">User ID</Label>
+          <Input
+            id="audit-user-filter"
+            placeholder="Filter by user ID"
+            value={filterUserId}
+            onChange={(e) => setFilterUserId(e.target.value)}
+            className="w-48"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="audit-date-from">From</Label>
+          <Input
+            id="audit-date-from"
+            type="date"
+            value={filterDateFrom}
+            onChange={(e) => setFilterDateFrom(e.target.value)}
+            className="w-40"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="audit-date-to">To</Label>
+          <Input
+            id="audit-date-to"
+            type="date"
+            value={filterDateTo}
+            onChange={(e) => setFilterDateTo(e.target.value)}
+            className="w-40"
+          />
+        </div>
+        <Button onClick={fetchEvents} disabled={loading}>
+          <Search className="mr-2 h-4 w-4" />
+          {loading ? "Loading..." : "Search"}
+        </Button>
+      </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {/* Table */}
+      <div className="rounded-md border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Timestamp</TableHead>
+              <TableHead>User ID</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Resource Type</TableHead>
+              <TableHead>Resource ID</TableHead>
+              <TableHead>Result</TableHead>
+              <TableHead>Reason</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 7 }).map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : events.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  No audit events found. Use the filters above and click Search.
+                </TableCell>
+              </TableRow>
+            ) : (
+              events.map((evt) => (
+                <TableRow key={evt.id}>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {evt.timestamp
+                      ? new Date(evt.timestamp).toLocaleString()
+                      : "-"}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {evt.userId}
+                  </TableCell>
+                  <TableCell>
+                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                      {evt.action}
+                    </code>
+                  </TableCell>
+                  <TableCell>
+                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                      {evt.resourceType}
+                    </code>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {evt.resourceId}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={evt.allowed ? "default" : "destructive"}
+                      className="text-xs"
+                    >
+                      {evt.allowed ? "allowed" : "denied"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
+                    {evt.reason || "-"}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main AuthorizationTab
 // ---------------------------------------------------------------------------
 
 export function AuthorizationTab() {
   return (
     <div className="space-y-8">
+      <PendingApprovalsSection />
+      <hr className="border-border" />
       <RoleManagementSection />
       <hr className="border-border" />
       <PermissionGrantsSection />
       <hr className="border-border" />
       <AuthorizationTestSection />
+      <hr className="border-border" />
+      <AuditTrailSection />
     </div>
   );
 }

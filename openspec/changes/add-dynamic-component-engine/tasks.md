@@ -109,8 +109,8 @@
 - [x] 7.9 Implement engine type definitions (shared contract)
 - [x] 7.10 Implement barrel export (engine/index.ts)
 
-### 8. Simple Fields (Phase 1)
-- [ ] 8.1 Migrate text/number/select fields to registry-backed instances
+### 8. Simple Fields (Phase 1) ✅
+- [x] 8.1 Migrate text/number/select fields to registry-backed instances (field-migration.ts — Zod→ComponentDefinition)
 - [x] 8.2 Implement instance override mechanism (config merge in resolver)
 - [x] 8.3 Implement bilingual label resolution (i18n merge in resolver)
 
@@ -119,26 +119,26 @@
 - [x] 9.2 Implement Stage orchestrator (ordered rendering, transitions)
 - [x] 9.3 Implement flow session tracking (CONTEXT nodes)
 - [x] 9.4 Implement flow graph validation (reachability, cycles, defaults, terminals)
-- [ ] 9.5 Implement Kanban view for flow stage management
+- [x] 9.5 Implement Kanban view for flow stage management (DynamicKanban component)
 
 ### 10. Branching (Phase 3) ✅
 - [x] 10.1 Implement Branch Rule evaluator (evaluateCondition + all operators)
 - [x] 10.2 Implement conditional stage routing (DAG transition evaluation)
-- [ ] 10.3 Implement branch selection UI component
+- [x] 10.3 Implement branch selection UI component (BranchSelector)
 
-### 11. Control Board (Phase 4) — Partial
+### 11. Control Board (Phase 4) ✅
 - [x] 11.1 Implement Component Registry admin UI (CRUD table + dialog)
-- [ ] 11.2 Implement Flow Designer admin UI
-- [ ] 11.3 Implement Branch Rule editor
-- [ ] 11.4 Implement real-time preview
-- [ ] 11.5 Implement WebSocket propagation
+- [x] 11.2 Implement Flow Designer admin UI (FlowDesigner.tsx)
+- [x] 11.3 Implement Branch Rule editor (transition editor in FlowDesigner)
+- [x] 11.4 Implement real-time preview (PreviewRenderer component)
+- [x] 11.5 Implement WebSocket propagation (RealtimeClient + ConnectionStatus + polling fallback)
 
-### 12. Complex Filters (Phase 5) — Partial
+### 12. Complex Filters (Phase 5) ✅
 - [x] 12.1 Implement schema-to-filter-dimension mapper (deriveFilterDimensions in schema-adaptive.ts)
-- [ ] 12.2 Implement dynamic filter UI generator
-- [ ] 12.3 Implement filter query builder for Mujarrad
+- [x] 12.2 Implement dynamic filter UI generator (DynamicFilterPanel component)
+- [x] 12.3 Implement filter query builder for Mujarrad (filter-query-builder.ts)
 
-### 13. Notification Engine (Phase 5B) — Core Complete
+### 13. Notification Engine (Phase 5B) ✅
 - [x] 13.1 Implement Notification Definition CRUD (Mujarrad TEMPLATE nodes)
 - [x] 13.2 Implement trigger attachment system (bind notifications to flow/stage/component events)
 - [x] 13.3 Implement event bus for notification triggers (listen to engine events)
@@ -146,29 +146,29 @@
 - [x] 13.5 Implement bilingual template interpolation with context variable resolution
 - [x] 13.6 Implement escalation chain state machine (timeout, level progression, ack)
 - [x] 13.7 Implement recipient resolution (role-based, relationship-based, dynamic)
-- [ ] 13.8 Implement Control Board: notification definition manager
-- [ ] 13.9 Implement Control Board: attachment matrix UI (visual bind to events)
-- [ ] 13.10 Implement Control Board: escalation chain editor
-- [ ] 13.11 Implement Control Board: test/preview notification
-- [ ] 13.12 Implement notification analytics dashboard (delivery, engagement, escalation metrics)
+- [x] 13.8 Implement Control Board: notification definition manager (NotificationManagerTab)
+- [x] 13.9 Implement Control Board: attachment matrix UI (NotificationAttachmentMatrix)
+- [x] 13.10 Implement Control Board: escalation chain editor (in NotificationManagerTab)
+- [x] 13.11 Implement Control Board: test/preview notification (test dialog in NotificationManagerTab)
+- [x] 13.12 Implement notification analytics dashboard (NotificationAnalytics with recharts)
 - [x] 13.13 Implement cooldown and deduplication logic
-- [ ] 13.14 Implement notification preferences (user opt-in/out per channel/category)
+- [x] 13.14 Implement notification preferences (NotificationPreferencesManager + panel)
 
-### 14. Authorization Module (Phase 4B) — Core Complete
+### 14. Authorization Module (Phase 4B) ✅
 - [x] 14.1 Implement RBAC role assignment and checking
 - [x] 14.2 Implement ReBAC relationship-based permission checks (graph traversal)
 - [x] 14.3 Implement scope constraint evaluation (corridor, flow, category)
 - [x] 14.4 Implement publish gate workflow (maker-checker in authorize pipeline)
 - [x] 14.5 Implement permission grant CRUD (grant, revoke, delegate, expire)
 - [x] 14.6 Implement permission caching (session-scoped, invalidate on grant changes)
-- [ ] 14.7 Implement Control Board: role & member management UI
-- [ ] 14.8 Implement Control Board: resource permission matrix UI
-- [ ] 14.9 Implement Control Board: pending approvals queue UI
-- [ ] 14.10 Implement Control Board: audit trail viewer with filters
-- [ ] 14.11 Implement authorization middleware (wraps all Control Board actions)
-- [ ] 14.12 Implement UI-level permission gates (hide/disable actions user can't perform)
+- [x] 14.7 Implement Control Board: role & member management UI (AuthorizationTab)
+- [x] 14.8 Implement Control Board: resource permission matrix UI (AuthorizationTab)
+- [x] 14.9 Implement Control Board: pending approvals queue UI (PendingApprovalsSection)
+- [x] 14.10 Implement Control Board: audit trail viewer with filters (AuditTrailSection)
+- [x] 14.11 Implement authorization middleware (auth-middleware.ts — withAuthorization HOF + withPermission HOC)
+- [x] 14.12 Implement UI-level permission gates (PermissionGate component)
 
-### 15. Experience Builder (Phase 6)
-- [ ] 14.1 Implement full-page composition from registry components
-- [ ] 14.2 Implement experience templates (pre-configured flow + component sets)
-- [ ] 14.3 Implement agentic suggestions integration
+### 15. Experience Builder (Phase 6) ✅
+- [x] 15.1 Implement full-page composition from registry components (DynamicPage component)
+- [x] 15.2 Implement experience templates (3 built-in: onboarding, matching, due-diligence)
+- [x] 15.3 Implement agentic suggestions integration (SuggestionEngine + SuggestionReviewPanel)

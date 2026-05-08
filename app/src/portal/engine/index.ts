@@ -68,8 +68,11 @@ export {
   useFlowEngine,
   useNotificationEngine,
   useAuthorization,
+  useSuggestions,
   evaluateCondition,
+  useRealtimeStatus,
 } from './hooks';
+export type { RealtimeStatus } from './hooks';
 
 // Registries & managers
 export { rendererRegistry } from './renderer-registry';
@@ -78,8 +81,14 @@ export { ComponentResolver } from './component-resolver';
 export { FlowEngine } from './flow-engine';
 export { NotificationEngine } from './notification-engine';
 export { AuthorizationEngine } from './authorization';
+export { SuggestionEngine } from './agentic-suggestions';
+export type { AgentSuggestion, SuggestionType, SuggestionStatus } from './agentic-suggestions';
 export { engineEventBus } from './event-bus';
 export { definitionCache, instanceCache, CacheManager } from './cache-manager';
+
+// Real-time WebSocket client
+export { realtimeClient, RealtimeClient } from './realtime-client';
+export type { RealtimeClientOptions, RealtimeConnectionMode } from './realtime-client';
 
 // Schema-adaptive
 export {
@@ -90,3 +99,20 @@ export {
 
 // Built-in renderers
 export { BUILT_IN_RENDERERS } from './renderers/index.js';
+
+// Field migration (Zod → ComponentDefinition)
+export { migrateZodSchema, seedRegistryFromSchema } from './field-migration';
+
+// Filter query builder for Mujarrad
+export { buildMujarradQuery } from './filter-query-builder';
+export type { MujarradQueryParams, MujarradQueryResult } from './filter-query-builder';
+
+// Experience templates
+export {
+  EXPERIENCE_TEMPLATES,
+  getTemplateBySlug,
+  getTemplateById,
+  getTemplatesByCategory,
+  instantiateTemplate,
+} from './experience-templates';
+export type { ExperienceTemplate, InstantiatedExperience } from './experience-templates';

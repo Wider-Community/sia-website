@@ -19,24 +19,26 @@ import type {
   PermissionGrant,
   AuthorizationRequest,
   AuthorizationResult,
+  NotificationChannel,
+  NotificationPriority,
 } from './types';
-import { ComponentResolver } from './component-resolver';
-import { ComponentRegistry } from './component-registry';
-import { FlowEngine } from './flow-engine';
-import { NotificationEngine } from './notification-engine';
-import { AuthorizationEngine } from './authorization';
 import { engineEventBus } from './event-bus';
 import { definitionCache } from './cache-manager';
+import { realtimeClient, type RealtimeConnectionMode } from './realtime-client';
+import {
+  initializeEngineInternal,
+  getResolver,
+  getRegistry,
+  getFlowEngine,
+  getNotificationEngine,
+  getAuthEngine,
+  getNotifPrefsManager,
+  getSuggestionEngine,
+} from './hooks-internal';
+import type { AgentSuggestion, SuggestionStatus, SuggestionType } from './agentic-suggestions';
 
-// ---------------------------------------------------------------------------
-// Shared engine instances (initialized lazily with the entity layer)
-// ---------------------------------------------------------------------------
-
-let _resolver: ComponentResolver | null = null;
-let _registry: ComponentRegistry | null = null;
-let _flowEngine: FlowEngine | null = null;
-let _notificationEngine: NotificationEngine | null = null;
-let _authEngine: AuthorizationEngine | null = null;
+// Re-export getAuthEngine so auth-middleware can import it directly
+export { getAuthEngine } from './hooks-internal';
 
 /**
  * Initialize the engine with the entity control layer.
@@ -45,37 +47,7 @@ let _authEngine: AuthorizationEngine | null = null;
 export function initializeEngine(
   entityLayer: import('../lib/entity-control-layer').EntityControlLayer,
 ): void {
-  _registry = new ComponentRegistry(entityLayer);
-  _resolver = new ComponentResolver(_registry);
-  _flowEngine = new FlowEngine(entityLayer);
-  _notificationEngine = new NotificationEngine(entityLayer);
-  _notificationEngine.initialize();
-  _authEngine = new AuthorizationEngine(entityLayer);
-}
-
-function getResolver(): ComponentResolver {
-  if (!_resolver) throw new Error('Engine not initialized. Call initializeEngine() in PortalApp.tsx.');
-  return _resolver;
-}
-
-function getRegistry(): ComponentRegistry {
-  if (!_registry) throw new Error('Engine not initialized. Call initializeEngine() in PortalApp.tsx.');
-  return _registry;
-}
-
-function getFlowEngine(): FlowEngine {
-  if (!_flowEngine) throw new Error('Engine not initialized. Call initializeEngine() in PortalApp.tsx.');
-  return _flowEngine;
-}
-
-function getNotificationEngine(): NotificationEngine {
-  if (!_notificationEngine) throw new Error('Engine not initialized. Call initializeEngine() in PortalApp.tsx.');
-  return _notificationEngine;
-}
-
-function getAuthEngine(): AuthorizationEngine {
-  if (!_authEngine) throw new Error('Engine not initialized. Call initializeEngine() in PortalApp.tsx.');
-  return _authEngine;
+  initializeEngineInternal(entityLayer);
 }
 
 // ---------------------------------------------------------------------------
@@ -654,4 +626,211 @@ export function useAuthorization(): UseAuthorizationResult {
   }, []);
 
   return { authorize, grantPermission, revokePermission, getPermissionsForUser, assignRole, getUserRoles, removeRole };
+}
+
+// ---------------------------------------------------------------------------
+// useRealtimeStatus — connection status for the real-time client
+// ---------------------------------------------------------------------------
+
+export interface RealtimeStatus {
+  connected: boolean;
+  mode: RealtimeConnectionMode;
+}
+
+/**
+ * Returns the current real-time connection status.
+ * Re-renders when the connection state changes.
+ */
+export function useRealtimeStatus(): RealtimeStatus {
+  const [status, setStatus] = useState<RealtimeStatus>({
+    connected: realtimeClient.connected,
+    mode: realtimeClient.mode,
+  });
+
+  useEffect(() => {
+    const unsubConnection = realtimeClient.onConnectionChange(() => {
+      setStatus({
+        connected: realtimeClient.connected,
+        mode: realtimeClient.mode,
+      });
+    });
+
+    const unsubMode = realtimeClient.onModeChange(() => {
+      setStatus({
+        connected: realtimeClient.connected,
+        mode: realtimeClient.mode,
+      });
+    });
+
+    return () => {
+      unsubConnection();
+      unsubMode();
+    };
+  }, []);
+
+  return status;
+}
+
+// ---------------------------------------------------------------------------
+// useSuggestions — agentic suggestions CRUD
+// ---------------------------------------------------------------------------
+
+interface UseSuggestionsResult {
+  suggestions: AgentSuggestion[];
+  loading: boolean;
+  error: Error | null;
+  refresh: () => void;
+  propose: (suggestion: Omit<AgentSuggestion, 'id' | 'status' | 'createdAt'>) => Promise<AgentSuggestion>;
+  approve: (id: string) => Promise<AgentSuggestion>;
+  reject: (id: string) => Promise<AgentSuggestion>;
+}
+
+export function useSuggestions(filters?: {
+  status?: SuggestionStatus;
+  type?: SuggestionType;
+}): UseSuggestionsResult {
+  const [suggestions, setSuggestions] = useState<AgentSuggestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    getSuggestionEngine()
+      .listSuggestions(filters)
+      .then((s) => { if (!cancelled) { setSuggestions(s); setLoading(false); } })
+      .catch((err) => { if (!cancelled) { setError(err instanceof Error ? err : new Error(String(err))); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [filters?.status, filters?.type, refreshKey]);
+
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
+  const propose = useCallback(async (suggestion: Omit<AgentSuggestion, 'id' | 'status' | 'createdAt'>) => {
+    const created = await getSuggestionEngine().proposeSuggestion(suggestion);
+    refresh();
+    return created;
+  }, [refresh]);
+
+  const approve = useCallback(async (id: string) => {
+    const approved = await getSuggestionEngine().approveSuggestion(id);
+    refresh();
+    return approved;
+  }, [refresh]);
+
+  const reject = useCallback(async (id: string) => {
+    const rejected = await getSuggestionEngine().rejectSuggestion(id);
+    refresh();
+    return rejected;
+  }, [refresh]);
+
+  return { suggestions, loading, error, refresh, propose, approve, reject };
+}
+
+// ---------------------------------------------------------------------------
+// useNotificationPreferences — per-user notification channel preferences
+// ---------------------------------------------------------------------------
+
+import type { NotificationPreferences } from './notification-preferences';
+
+interface UseNotificationPreferencesResult {
+  preferences: NotificationPreferences | null;
+  loading: boolean;
+  saving: boolean;
+  error: Error | null;
+  updatePreferences: (updates: Partial<Omit<NotificationPreferences, 'id' | 'userId'>>) => Promise<void>;
+  toggleCategoryChannel: (category: string, channel: NotificationChannel, enabled: boolean) => Promise<void>;
+  updateCategoryPriority: (category: string, priority: NotificationPriority) => Promise<void>;
+}
+
+export function useNotificationPreferences(userId: string): UseNotificationPreferencesResult {
+  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    setLoading(true);
+
+    getNotifPrefsManager()
+      .getOrCreatePreferences(userId)
+      .then((prefs) => {
+        if (!cancelled) {
+          setPreferences(prefs);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+          setLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const updatePreferences = useCallback(async (
+    updates: Partial<Omit<NotificationPreferences, 'id' | 'userId'>>,
+  ) => {
+    if (!preferences) return;
+    setSaving(true);
+    try {
+      const updated = await getNotifPrefsManager().updatePreferences(preferences.id, updates);
+      setPreferences(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setSaving(false);
+    }
+  }, [preferences]);
+
+  const toggleCategoryChannel = useCallback(async (
+    category: string,
+    channel: NotificationChannel,
+    enabled: boolean,
+  ) => {
+    if (!preferences) return;
+    setSaving(true);
+    try {
+      const updated = await getNotifPrefsManager().toggleCategoryChannel(
+        preferences.id,
+        preferences,
+        category,
+        channel,
+        enabled,
+      );
+      setPreferences(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setSaving(false);
+    }
+  }, [preferences]);
+
+  const updateCategoryPriority = useCallback(async (
+    category: string,
+    priority: NotificationPriority,
+  ) => {
+    if (!preferences) return;
+    setSaving(true);
+    try {
+      const categories = preferences.categories.map((cat) =>
+        cat.category === category ? { ...cat, minimumPriority: priority } : cat,
+      );
+      const updated = await getNotifPrefsManager().updatePreferences(
+        preferences.id,
+        { categories },
+      );
+      setPreferences(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setSaving(false);
+    }
+  }, [preferences]);
+
+  return { preferences, loading, saving, error, updatePreferences, toggleCategoryChannel, updateCategoryPriority };
 }
