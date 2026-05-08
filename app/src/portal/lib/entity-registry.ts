@@ -206,7 +206,7 @@ export const ENTITY_REGISTRY: Record<string, EntityDef> = {
     ],
   },
   "component-definitions": {
-    nodeType: "TEMPLATE",
+    nodeType: "REGULAR",
     titleField: "slug",
     requiredFields: ["slug", "renderer", "componentCategory"],
     relationships: [],
@@ -225,7 +225,7 @@ export const ENTITY_REGISTRY: Record<string, EntityDef> = {
     ],
   },
   "flow-definitions": {
-    nodeType: "TEMPLATE",
+    nodeType: "REGULAR",
     titleField: "slug",
     requiredFields: ["slug", "entryStageId"],
     relationships: [],
@@ -244,7 +244,7 @@ export const ENTITY_REGISTRY: Record<string, EntityDef> = {
     ],
   },
   "notification-definitions": {
-    nodeType: "TEMPLATE",
+    nodeType: "REGULAR",
     titleField: "slug",
     requiredFields: ["slug", "trigger", "enabled"],
     relationships: [],

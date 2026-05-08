@@ -20,7 +20,7 @@ export class ComponentRegistry {
   ): Promise<ComponentDefinition> {
     const record = await this.entityLayer.createEntity(
       'component-definitions',
-      { ...def, version: 1, status: def.status ?? 'draft' },
+      this.serializeForMujarrad(def),
     );
     return this.toDefinition(record);
   }
@@ -70,10 +70,11 @@ export class ComponentRegistry {
     // Increment version on every update for cache invalidation
     const existing = await this.getDefinition(id);
     const nextVersion = (existing?.version ?? 0) + 1;
+    const serialized = this.serializeForMujarrad(updates);
     const record = await this.entityLayer.updateEntity(
       'component-definitions',
       id,
-      { ...updates, version: nextVersion },
+      { ...serialized, version: nextVersion },
     );
     return this.toDefinition(record);
   }
@@ -170,6 +171,21 @@ export class ComponentRegistry {
     definitionId: string,
   ): Promise<ComponentInstance[]> {
     return this.listInstances({ definitionId });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Serialization (complex objects → flat strings for Mujarrad)
+  // ---------------------------------------------------------------------------
+
+  private serializeForMujarrad(
+    def: Partial<ComponentDefinition> & Record<string, unknown>,
+  ): Record<string, unknown> {
+    const { category, ...rest } = def;
+    const out: Record<string, unknown> = { ...rest };
+
+    if (category !== undefined) out.componentCategory = category;
+
+    return out;
   }
 
   // ---------------------------------------------------------------------------
