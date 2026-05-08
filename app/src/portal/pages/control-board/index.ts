@@ -1,0 +1,1 @@
+export { ControlBoardPage } from './ControlBoardPage';

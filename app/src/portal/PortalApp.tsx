@@ -1,7 +1,7 @@
 import { Refine, Authenticated } from "@refinedev/core";
 import routerProvider from "@refinedev/react-router";
 import { Outlet, Navigate } from "react-router-dom";
-import { Building2, Users, FileSignature, CheckSquare, Layers, Link2 } from "lucide-react";
+import { Building2, Users, FileSignature, CheckSquare, Layers, Link2, Settings2 } from "lucide-react";
 import {
   mockDataProvider,
   mockAuthProvider,
@@ -81,6 +81,11 @@ export function PortalApp() {
         },
         { name: "sla-rules", meta: { hide: true } },
         { name: "alerts", meta: { hide: true } },
+        {
+          name: "control-board",
+          list: "/portal/control-board",
+          meta: { label: "Control Board", icon: <Settings2 /> },
+        },
       ]}
       options={{
         syncWithLocation: true,

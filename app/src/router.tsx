@@ -34,6 +34,7 @@ import { EngagementDetailPage } from "@/portal/pages/engagements/EngagementDetai
 import { MatchListPage } from "@/portal/pages/matches/MatchListPage";
 import { MatchCreatePage } from "@/portal/pages/matches/MatchCreatePage";
 import { MatchDetailPage } from "@/portal/pages/matches/MatchDetailPage";
+import { ControlBoardPage } from "@/portal/pages/control-board";
 
 const ChartsPage = lazy(() => import("@/pages/investor/ChartsPage").then(m => ({ default: m.ChartsPage })));
 const SalesForecastPage = lazy(() => import("@/pages/investor/SalesForecastPage").then(m => ({ default: m.SalesForecastPage })));
@@ -125,6 +126,7 @@ export const router = createBrowserRouter([
           { path: "/portal/tasks/edit/:id", element: <TaskEditPage /> },
           { path: "/portal/tasks/:id", element: <TaskDetailPage /> },
           { path: "/portal/settings/sla", element: <SlaSettingsPage /> },
+          { path: "/portal/control-board", element: <ControlBoardPage /> },
         ],
       },
     ],

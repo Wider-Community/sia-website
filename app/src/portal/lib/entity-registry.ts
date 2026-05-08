@@ -205,6 +205,62 @@ export const ENTITY_REGISTRY: Record<string, EntityDef> = {
       },
     ],
   },
+  "component-definitions": {
+    nodeType: "TEMPLATE",
+    titleField: "slug",
+    requiredFields: ["slug", "renderer", "componentCategory"],
+    relationships: [],
+  },
+  "component-instances": {
+    nodeType: "REGULAR",
+    titleField: "definitionId",
+    requiredFields: ["definitionId"],
+    relationships: [
+      {
+        targetResource: "component-definitions",
+        fkField: "definitionId",
+        verb: "belongs_to",
+        direction: "outgoing",
+      },
+    ],
+  },
+  "flow-definitions": {
+    nodeType: "TEMPLATE",
+    titleField: "slug",
+    requiredFields: ["slug", "entryStageId"],
+    relationships: [],
+  },
+  "flow-sessions": {
+    nodeType: "CONTEXT",
+    titleField: "flowId",
+    requiredFields: ["flowId", "userId", "currentStageId", "status"],
+    relationships: [
+      {
+        targetResource: "flow-definitions",
+        fkField: "flowId",
+        verb: "executing",
+        direction: "outgoing",
+      },
+    ],
+  },
+  "notification-definitions": {
+    nodeType: "TEMPLATE",
+    titleField: "slug",
+    requiredFields: ["slug", "trigger", "enabled"],
+    relationships: [],
+  },
+  "permission-grants": {
+    nodeType: "REGULAR",
+    titleField: "permission",
+    requiredFields: ["subjectType", "subjectId", "permission", "resourceType", "resourceId", "grantedBy"],
+    relationships: [],
+  },
+  "role-assignments": {
+    nodeType: "REGULAR",
+    titleField: "role",
+    requiredFields: ["userId", "role"],
+    relationships: [],
+  },
 };
 
 export function getEntityDef(resource: string): EntityDef | undefined {
