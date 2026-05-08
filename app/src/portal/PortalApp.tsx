@@ -12,8 +12,15 @@ import { mujarradDataProvider } from "./providers/mujarrad-data-provider";
 import { authProvider as mujarradAuthProvider } from "./providers/auth-provider";
 import { PortalLayout } from "./layouts/PortalLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { entityLayer } from "./providers/mujarrad-data-provider";
+import { initializeEngine } from "./engine";
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
+
+// Initialize the dynamic component engine with the Mujarrad data layer
+if (!USE_MOCK) {
+  initializeEngine(entityLayer);
+}
 
 const dataProvider = USE_MOCK ? mockDataProvider : mujarradDataProvider;
 const authProviderInstance = USE_MOCK ? mockAuthProvider : mujarradAuthProvider;
