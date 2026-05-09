@@ -216,6 +216,7 @@ export class ComponentRegistry {
         ar: { label: record.slug as string },
       }) as ComponentDefinition['i18n'],
       composedOf: record.composedOf as string[] | undefined,
+      dataSource: safeParse(record.dataSource, undefined) as ComponentDefinition['dataSource'],
       version: (record.version as number) ?? 1,
       status: (record.status as ComponentDefinition['status']) ?? 'draft',
     };
