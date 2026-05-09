@@ -37,7 +37,7 @@ import { Plus, Pencil, Trash2, Sprout } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "../../components/PageShell";
 import { PageHeader } from "../../components/PageHeader";
-import { seedEngine } from "../../engine/seed";
+import { seedEngine, clearEngine } from "../../engine/seed";
 import { useComponentRegistry } from "../../engine/hooks";
 import type { ComponentCategory, ComponentDefinition } from "../../engine/types";
 import { AuthorizationTab } from "./AuthorizationTab";
@@ -156,6 +156,25 @@ export function ControlBoardPage() {
       );
       console.error("seedEngine() failed:", err);
     } finally {
+      setSeeding(false);
+    }
+  }, []);
+
+  const handleClearEngine = useCallback(async () => {
+    if (!window.confirm("This will delete ALL engine data (components, flows, sessions, notifications). Continue?")) return;
+    setSeeding(true);
+    try {
+      const result = await clearEngine();
+      toast.success(
+        `Cleared ${result.deleted} record(s).` +
+          (result.errors.length > 0 ? ` ${result.errors.length} error(s) — check console.` : ""),
+      );
+      if (result.errors.length > 0) console.warn("Clear errors:", result.errors);
+      // Reload to reset all state
+      window.location.reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Clear failed.");
+      console.error("clearEngine() failed:", err);
       setSeeding(false);
     }
   }, []);
@@ -307,6 +326,15 @@ export function ControlBoardPage() {
               disabled={seeding}
             >
               {seeding ? "..." : "Re-seed"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearEngine}
+              disabled={seeding}
+              className="text-destructive hover:text-destructive"
+            >
+              {seeding ? "..." : "Clear All"}
             </Button>
           </div>
         </div>
