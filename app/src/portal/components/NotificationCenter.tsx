@@ -94,15 +94,22 @@ export function NotificationCenter() {
 
   // Clear all notifications
   const handleClearAll = useCallback(() => {
-    // Delete all stored alerts
-    for (const alert of allAlerts) {
-      if (alert.isStored) {
-        deleteAlert({ resource: "alerts", id: alert.id });
-      }
+    // Capture current IDs before state changes
+    const alertsToDismiss = allAlerts.map((a) => a.id);
+    const storedIds = allAlerts.filter((a) => a.isStored).map((a) => a.id);
+
+    // Dismiss all from UI immediately
+    setDismissed((prev) => {
+      const next = new Set(prev);
+      for (const id of alertsToDismiss) next.add(id);
+      return next;
+    });
+
+    // Delete stored alerts from Mujarrad
+    for (const id of storedIds) {
+      deleteAlert({ resource: "alerts", id });
     }
-    // Dismiss dynamic (SLA) alerts locally
-    setDismissed(new Set(allAlerts.map((a) => a.id)));
-    setTimeout(() => alertsQuery.refetch(), 500);
+    setTimeout(() => alertsQuery.refetch(), 1000);
   }, [allAlerts, deleteAlert, alertsQuery]);
 
   const typeColor: Record<string, string> = {
