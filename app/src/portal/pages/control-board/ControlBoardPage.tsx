@@ -38,8 +38,9 @@ import { toast } from "sonner";
 import { PageShell } from "../../components/PageShell";
 import { PageHeader } from "../../components/PageHeader";
 import { seedEngine, clearEngine } from "../../engine/seed";
-import { useComponentRegistry } from "../../engine/hooks";
+import { useComponentRegistry, useReferenceDatasets, useEntityResources } from "../../engine/hooks";
 import type { ComponentCategory, ComponentDefinition } from "../../engine/types";
+import type { DataSourceBinding } from "../../engine/types";
 import { AuthorizationTab } from "./AuthorizationTab";
 import { FlowDesigner } from "./FlowDesigner";
 import { NotificationManagerTab } from "./NotificationManagerTab";
@@ -90,6 +91,11 @@ interface FormState {
   enPlaceholder: string;
   arLabel: string;
   arPlaceholder: string;
+  dataSourceType: 'none' | 'reference' | 'entity';
+  dataSourceDatasetSlug: string;
+  dataSourceResource: string;
+  dataSourceDisplayField: string;
+  dataSourceValueField: string;
 }
 
 const emptyForm: FormState = {
@@ -104,6 +110,11 @@ const emptyForm: FormState = {
   enPlaceholder: "",
   arLabel: "",
   arPlaceholder: "",
+  dataSourceType: "none",
+  dataSourceDatasetSlug: "",
+  dataSourceResource: "",
+  dataSourceDisplayField: "",
+  dataSourceValueField: "id",
 };
 
 function formFromDefinition(def: ComponentDefinition): FormState {
@@ -119,6 +130,11 @@ function formFromDefinition(def: ComponentDefinition): FormState {
     enPlaceholder: def.i18n.en.placeholder ?? "",
     arLabel: def.i18n.ar.label,
     arPlaceholder: def.i18n.ar.placeholder ?? "",
+    dataSourceType: def.dataSource?.type ?? "none",
+    dataSourceDatasetSlug: def.dataSource?.datasetSlug ?? "",
+    dataSourceResource: def.dataSource?.resource ?? "",
+    dataSourceDisplayField: def.dataSource?.displayField ?? "",
+    dataSourceValueField: def.dataSource?.valueField ?? "id",
   };
 }
 
@@ -130,6 +146,9 @@ export function ControlBoardPage() {
     updateDefinition,
     deleteDefinition,
   } = useComponentRegistry();
+
+  const { datasets: refDatasets } = useReferenceDatasets();
+  const { resources: entityResources } = useEntityResources();
 
   const [seeding, setSeeding] = useState(false);
 
@@ -247,6 +266,18 @@ export function ControlBoardPage() {
       return;
     }
 
+    const dataSource: DataSourceBinding | undefined =
+      form.dataSourceType === "none"
+        ? undefined
+        : form.dataSourceType === "reference"
+          ? { type: "reference", datasetSlug: form.dataSourceDatasetSlug }
+          : {
+              type: "entity",
+              resource: form.dataSourceResource,
+              displayField: form.dataSourceDisplayField || undefined,
+              valueField: form.dataSourceValueField || "id",
+            };
+
     const payload = {
       slug: form.slug.trim(),
       category: form.category,
@@ -255,6 +286,7 @@ export function ControlBoardPage() {
       dataSchema,
       defaultConfig,
       validations,
+      dataSource,
       i18n: {
         en: { label: form.enLabel, placeholder: form.enPlaceholder || undefined },
         ar: { label: form.arLabel, placeholder: form.arPlaceholder || undefined },
@@ -565,6 +597,78 @@ export function ControlBoardPage() {
                 value={form.validations}
                 onChange={(e) => updateField("validations", e.target.value)}
               />
+            </div>
+
+            {/* Data Source */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Data Source</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Source Type</Label>
+                  <Select
+                    value={form.dataSourceType}
+                    onValueChange={(v) => updateField("dataSourceType", v as FormState["dataSourceType"])}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None (static options)</SelectItem>
+                      <SelectItem value="reference">System Reference Data</SelectItem>
+                      <SelectItem value="entity">Entity Data (live)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {form.dataSourceType === "reference" && (
+                  <div className="space-y-2">
+                    <Label>Dataset</Label>
+                    <Select
+                      value={form.dataSourceDatasetSlug}
+                      onValueChange={(v) => updateField("dataSourceDatasetSlug", v)}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select dataset..." /></SelectTrigger>
+                      <SelectContent>
+                        {refDatasets.map((ds) => (
+                          <SelectItem key={ds.datasetSlug} value={ds.datasetSlug}>
+                            {ds.name_en}
+                          </SelectItem>
+                        ))}
+                        {refDatasets.length === 0 && (
+                          <SelectItem value="__none" disabled>No datasets yet</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {form.dataSourceType === "entity" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Resource</Label>
+                      <Select
+                        value={form.dataSourceResource}
+                        onValueChange={(v) => updateField("dataSourceResource", v)}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select resource..." /></SelectTrigger>
+                        <SelectContent>
+                          {entityResources.map((r) => (
+                            <SelectItem key={r.key} value={r.key}>
+                              {r.key}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Display Field</Label>
+                      <Input
+                        value={form.dataSourceDisplayField}
+                        onChange={(e) => updateField("dataSourceDisplayField", e.target.value)}
+                        placeholder={entityResources.find((r) => r.key === form.dataSourceResource)?.titleField ?? "name"}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* i18n English */}
