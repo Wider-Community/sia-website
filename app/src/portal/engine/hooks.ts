@@ -34,7 +34,12 @@ import {
   getAuthEngine,
   getNotifPrefsManager,
   getSuggestionEngine,
+  getReferenceDataManager,
+  getEntityLayer,
 } from './hooks-internal';
+import type { ReferenceDataset } from './reference-data';
+import type { DataSourceBinding } from './types';
+import { ENTITY_REGISTRY } from '../lib/entity-registry';
 import type { AgentSuggestion, SuggestionStatus, SuggestionType } from './agentic-suggestions';
 
 // Re-export getAuthEngine so auth-middleware can import it directly
@@ -486,6 +491,148 @@ function getNestedValue(
     current = (current as Record<string, unknown>)[part];
   }
   return current;
+}
+
+// ---------------------------------------------------------------------------
+// useReferenceData — fetch a reference dataset by slug
+// ---------------------------------------------------------------------------
+
+interface UseReferenceDataResult {
+  dataset: ReferenceDataset | null;
+  loading: boolean;
+  error: Error | null;
+  refresh: () => void;
+}
+
+export function useReferenceData(datasetSlug: string | undefined): UseReferenceDataResult {
+  const [dataset, setDataset] = useState<ReferenceDataset | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (!datasetSlug) { setDataset(null); return; }
+    let cancelled = false;
+    setLoading(true);
+    getReferenceDataManager()
+      .getDataset(datasetSlug)
+      .then((d) => { if (!cancelled) { setDataset(d); setLoading(false); } })
+      .catch((err) => { if (!cancelled) { setError(err instanceof Error ? err : new Error(String(err))); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [datasetSlug, refreshKey]);
+
+  const refresh = useCallback(() => {
+    if (datasetSlug) getReferenceDataManager().invalidateCache(datasetSlug);
+    setRefreshKey((k) => k + 1);
+  }, [datasetSlug]);
+
+  return { dataset, loading, error, refresh };
+}
+
+// ---------------------------------------------------------------------------
+// useReferenceDatasets — list all available datasets
+// ---------------------------------------------------------------------------
+
+export function useReferenceDatasets(): { datasets: ReferenceDataset[]; loading: boolean } {
+  const [datasets, setDatasets] = useState<ReferenceDataset[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getReferenceDataManager()
+      .listDatasets()
+      .then((d) => { if (!cancelled) setDatasets(d); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  return { datasets, loading };
+}
+
+// ---------------------------------------------------------------------------
+// useEntityResources — list all available entity registry keys
+// ---------------------------------------------------------------------------
+
+export function useEntityResources(): { resources: Array<{ key: string; titleField: string }> } {
+  return useMemo(() => ({
+    resources: Object.entries(ENTITY_REGISTRY).map(([key, def]) => ({
+      key,
+      titleField: def.titleField,
+    })),
+  }), []);
+}
+
+// ---------------------------------------------------------------------------
+// useDataSource — resolve options from a DataSourceBinding
+// ---------------------------------------------------------------------------
+
+interface DataSourceOption {
+  value: string;
+  label: string;
+}
+
+interface UseDataSourceResult {
+  options: DataSourceOption[];
+  loading: boolean;
+}
+
+export function useDataSource(binding?: DataSourceBinding): UseDataSourceResult {
+  const [options, setOptions] = useState<DataSourceOption[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const bindingKey = binding ? `${binding.type}:${binding.datasetSlug ?? ''}:${binding.resource ?? ''}:${binding.displayField ?? ''}` : '';
+
+  useEffect(() => {
+    if (!binding || binding.type === 'none') {
+      setOptions([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+
+    if (binding.type === 'reference' && binding.datasetSlug) {
+      getReferenceDataManager()
+        .getDataset(binding.datasetSlug)
+        .then((dataset) => {
+          if (!cancelled && dataset) {
+            setOptions(dataset.entries.map((e) => ({ value: e.value, label: e.label_en })));
+          }
+          if (!cancelled) setLoading(false);
+        })
+        .catch(() => { if (!cancelled) setLoading(false); });
+    } else if (binding.type === 'entity' && binding.resource) {
+      const entityLayer = getEntityLayer();
+      const filters = binding.filters?.map((f) => ({
+        field: f.field,
+        operator: f.operator as 'eq',
+        value: f.value as string,
+      }));
+      entityLayer
+        .listEntities(binding.resource, { filters })
+        .then((result) => {
+          if (!cancelled) {
+            const displayField = binding.displayField ?? ENTITY_REGISTRY[binding.resource!]?.titleField ?? 'id';
+            const valueField = binding.valueField ?? 'id';
+            setOptions(
+              result.data.map((record) => ({
+                value: String((record as Record<string, unknown>)[valueField] ?? record.id),
+                label: String((record as Record<string, unknown>)[displayField] ?? record.id),
+              })),
+            );
+            setLoading(false);
+          }
+        })
+        .catch(() => { if (!cancelled) setLoading(false); });
+    } else {
+      setLoading(false);
+    }
+
+    return () => { cancelled = true; };
+  }, [bindingKey]);
+
+  return { options, loading };
 }
 
 // ---------------------------------------------------------------------------
