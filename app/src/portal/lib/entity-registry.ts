@@ -279,6 +279,12 @@ export const ENTITY_REGISTRY: Record<string, EntityDef> = {
     requiredFields: ["userId", "globalMute", "categories", "defaultChannels"],
     relationships: [],
   },
+  "reference-data": {
+    nodeType: "REGULAR",
+    titleField: "datasetSlug",
+    requiredFields: ["datasetSlug", "name_en", "entries"],
+    relationships: [],
+  },
 };
 
 export function getEntityDef(resource: string): EntityDef | undefined {
