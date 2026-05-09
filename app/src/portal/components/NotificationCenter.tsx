@@ -1,7 +1,6 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { useList, useUpdate } from "@refinedev/core";
-import { Bell, ChevronRight } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { useList, useUpdate, useDelete } from "@refinedev/core";
+import { Bell, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,7 +10,7 @@ import type { BaseRecord } from "@refinedev/core";
 
 export function NotificationCenter() {
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const { result: alertsResult, query: alertsQuery } = useList({
     resource: "alerts",
@@ -19,6 +18,7 @@ export function NotificationCenter() {
     sorters: [{ field: "createdAt", order: "desc" }],
   });
   const { mutate: updateAlert } = useUpdate();
+  const { mutate: deleteAlert } = useDelete();
 
   const orgs = useList({ resource: "organizations", pagination: { mode: "off" } });
   const events = useList({ resource: "activity-events", pagination: { mode: "off" } });
@@ -45,6 +45,7 @@ export function NotificationCenter() {
       createdAt: a.createdAt as string,
       entityId: (a.entityId as string) ?? undefined,
       entityType: (a.entityType as string) ?? undefined,
+      isStored: true,
     }));
 
     const dynamic = slaAlerts.map((a, i) => ({
@@ -56,43 +57,53 @@ export function NotificationCenter() {
       createdAt: new Date().toISOString(),
       entityId: a.entityId,
       entityType: a.entityType,
+      isStored: false,
     }));
 
     const storedIds = new Set(stored.map((s) => s.title));
     const uniqueDynamic = dynamic.filter((d) => !storedIds.has(d.title));
-    return [...stored, ...uniqueDynamic];
-  }, [storedAlerts, slaAlerts]);
+    return [...stored, ...uniqueDynamic].filter((a) => !dismissed.has(a.id));
+  }, [storedAlerts, slaAlerts, dismissed]);
 
   const unreadCount = allAlerts.filter((a) => !a.read).length;
 
-  const handleAlertClick = (alert: typeof allAlerts[number]) => {
-    if (!alert.id.startsWith("sla-") && !alert.read) {
+  // Mark as read on click (no navigation)
+  const handleAlertClick = useCallback((alert: typeof allAlerts[number]) => {
+    if (alert.isStored && !alert.read) {
       updateAlert({
         resource: "alerts",
         id: alert.id,
         values: { read: true },
       });
     }
+  }, [updateAlert]);
 
-    if (alert.entityId) {
-      switch (alert.entityType) {
-        case "organization":
-          navigate(`/portal/organizations/${alert.entityId}`);
-          break;
-        case "flow":
-          navigate(`/portal/flows/${alert.entityId}`);
-          break;
-        case "match":
-          navigate(`/portal/matches/${alert.entityId}`);
-          break;
-        case "component-definition":
-          navigate("/portal/control-board");
-          break;
+  // Dismiss a single notification
+  const handleDismiss = useCallback((e: React.MouseEvent, alert: typeof allAlerts[number]) => {
+    e.stopPropagation();
+    if (alert.isStored) {
+      deleteAlert({
+        resource: "alerts",
+        id: alert.id,
+      }, {
+        onSuccess: () => alertsQuery.refetch(),
+      });
+    }
+    setDismissed((prev) => new Set(prev).add(alert.id));
+  }, [deleteAlert, alertsQuery]);
+
+  // Clear all notifications
+  const handleClearAll = useCallback(() => {
+    // Delete all stored alerts
+    for (const alert of allAlerts) {
+      if (alert.isStored) {
+        deleteAlert({ resource: "alerts", id: alert.id });
       }
     }
-
-    setOpen(false);
-  };
+    // Dismiss dynamic (SLA) alerts locally
+    setDismissed(new Set(allAlerts.map((a) => a.id)));
+    setTimeout(() => alertsQuery.refetch(), 500);
+  }, [allAlerts, deleteAlert, alertsQuery]);
 
   const typeColor: Record<string, string> = {
     overdue: "bg-red-500",
@@ -116,9 +127,22 @@ export function NotificationCenter() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-        <div className="border-b px-4 py-3">
-          <h4 className="text-sm font-semibold">Notifications</h4>
-          <p className="text-xs text-muted-foreground">{unreadCount} unread</p>
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <div>
+            <h4 className="text-sm font-semibold">Notifications</h4>
+            <p className="text-xs text-muted-foreground">{unreadCount} unread</p>
+          </div>
+          {allAlerts.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-destructive hover:text-destructive"
+              onClick={handleClearAll}
+            >
+              <Trash2 className="mr-1 h-3 w-3" />
+              Clear all
+            </Button>
+          )}
         </div>
         <ScrollArea className="h-[300px]">
           {alertsQuery.isLoading ? (
@@ -130,22 +154,25 @@ export function NotificationCenter() {
           ) : (
             <div className="divide-y">
               {allAlerts.map((alert) => (
-                <button
+                <div
                   key={alert.id}
-                  className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors ${alert.read ? "opacity-60" : ""}`}
+                  className={`group relative px-4 py-3 transition-colors hover:bg-muted/50 cursor-pointer ${alert.read ? "opacity-60" : ""}`}
                   onClick={() => handleAlertClick(alert)}
                 >
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 pr-6">
                     <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${typeColor[alert.type] ?? "bg-muted-foreground"}`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium leading-tight">{alert.title}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{alert.message}</p>
                     </div>
-                    {alert.entityId && (
-                      <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
-                    )}
                   </div>
-                </button>
+                  <button
+                    className="absolute right-2 top-2 rounded p-1 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                    onClick={(e) => handleDismiss(e, alert)}
+                  >
+                    <X className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </div>
               ))}
             </div>
           )}
