@@ -13,6 +13,7 @@ import { NotificationEngine } from './notification-engine';
 import { AuthorizationEngine } from './authorization';
 import { NotificationPreferencesManager } from './notification-preferences';
 import { SuggestionEngine } from './agentic-suggestions';
+import { ReferenceDataManager } from './reference-data';
 import type { EntityControlLayer } from '../lib/entity-control-layer';
 
 // ---------------------------------------------------------------------------
@@ -27,6 +28,7 @@ let _notificationEngine: NotificationEngine | null = null;
 let _authEngine: AuthorizationEngine | null = null;
 let _notifPrefsManager: NotificationPreferencesManager | null = null;
 let _suggestionEngine: SuggestionEngine | null = null;
+let _referenceDataManager: ReferenceDataManager | null = null;
 
 // ---------------------------------------------------------------------------
 // Initialization
@@ -42,6 +44,7 @@ export function initializeEngineInternal(entityLayer: EntityControlLayer): void 
   _authEngine = new AuthorizationEngine(entityLayer);
   _notifPrefsManager = new NotificationPreferencesManager(entityLayer);
   _suggestionEngine = new SuggestionEngine(entityLayer);
+  _referenceDataManager = new ReferenceDataManager(entityLayer);
 }
 
 // ---------------------------------------------------------------------------
@@ -81,6 +84,11 @@ export function getNotifPrefsManager(): NotificationPreferencesManager {
 export function getSuggestionEngine(): SuggestionEngine {
   if (!_suggestionEngine) throw new Error('Engine not initialized. Call initializeEngine() in PortalApp.tsx.');
   return _suggestionEngine;
+}
+
+export function getReferenceDataManager(): ReferenceDataManager {
+  if (!_referenceDataManager) throw new Error('Engine not initialized. Call initializeEngine() in PortalApp.tsx.');
+  return _referenceDataManager;
 }
 
 export function getEntityLayer(): EntityControlLayer {
