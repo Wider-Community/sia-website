@@ -51,6 +51,19 @@ const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
   deprecated: "outline",
 };
 
+const rendererOptions: { value: string; label: string; description: string }[] = [
+  { value: "text-input", label: "Text Input", description: "Single-line text field" },
+  { value: "textarea", label: "Text Area", description: "Multi-line text field" },
+  { value: "number", label: "Number", description: "Numeric input" },
+  { value: "select", label: "Dropdown", description: "Pick one from a list" },
+  { value: "multi-select", label: "Multi-Select", description: "Pick multiple from a list" },
+  { value: "toggle", label: "Toggle / Switch", description: "On/off switch" },
+  { value: "date", label: "Date Picker", description: "Date selector" },
+  { value: "email-input", label: "Email", description: "Email address field" },
+  { value: "phone-input", label: "Phone", description: "Phone number field" },
+  { value: "file-upload", label: "File Upload", description: "File attachment" },
+];
+
 const categoryOptions: ComponentCategory[] = [
   "field",
   "composite",
@@ -317,7 +330,7 @@ export function ControlBoardPage() {
                 <TableRow>
                   <TableHead>Slug</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Renderer</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Version</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -348,9 +361,9 @@ export function ControlBoardPage() {
                         <span className="capitalize">{def.category}</span>
                       </TableCell>
                       <TableCell>
-                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                          {def.renderer}
-                        </code>
+                        <span className="text-sm">
+                          {rendererOptions.find((r) => r.value === def.renderer)?.label ?? def.renderer}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <Badge variant={statusVariant[def.status] ?? "outline"}>
@@ -427,13 +440,27 @@ export function ControlBoardPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="def-renderer">Renderer *</Label>
-                <Input
-                  id="def-renderer"
+                <Label>Field Type *</Label>
+                <Select
                   value={form.renderer}
-                  onChange={(e) => updateField("renderer", e.target.value)}
-                  placeholder="e.g. TextInputRenderer"
-                />
+                  onValueChange={(v) => updateField("renderer", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select field type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rendererOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{opt.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            — {opt.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
