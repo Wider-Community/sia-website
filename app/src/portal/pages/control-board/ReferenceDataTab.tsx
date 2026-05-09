@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { getReferenceDataManager } from "../../engine/hooks-internal";
 import type { ReferenceDataset, ReferenceEntry } from "../../engine/reference-data";
@@ -288,13 +288,17 @@ export function ReferenceDataTab() {
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openDelete(ds.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {ds.isSystem ? (
+                        <Lock className="h-4 w-4 text-muted-foreground ml-2" title="System dataset — cannot be deleted" />
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDelete(ds.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

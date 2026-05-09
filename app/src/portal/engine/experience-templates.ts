@@ -263,18 +263,10 @@ const dealMatching: ExperienceTemplate = {
     makeComponentDef('target-countries', 'multi-select', 'field', 'Target Countries', 'الدول المستهدفة', { type: 'array', items: { type: 'string' } }, {},
       [], { type: 'reference', datasetSlug: 'countries' }),
     makeComponentDef('deal-range', 'range-input', 'field', 'Deal Range (USD)', 'نطاق الصفقة (دولار)', { type: 'object', properties: { min: { type: 'number' }, max: { type: 'number' } } }),
-    makeComponentDef('timeline', 'select', 'field', 'Expected Timeline', 'الجدول الزمني المتوقع', { type: 'string' }, { options: [
-      { value: '3m', label: '3 months' },
-      { value: '6m', label: '6 months' },
-      { value: '12m', label: '12 months' },
-      { value: '24m', label: '24+ months' },
-    ] }),
-    makeComponentDef('partnership-type', 'select', 'field', 'Partnership Type', 'نوع الشراكة', { type: 'string' }, { options: [
-      { value: 'joint-venture', label: 'Joint Venture' },
-      { value: 'investment', label: 'Investment' },
-      { value: 'licensing', label: 'Licensing' },
-      { value: 'acquisition', label: 'Acquisition' },
-    ] }),
+    makeComponentDef('timeline', 'select', 'field', 'Expected Timeline', 'الجدول الزمني المتوقع', { type: 'string' }, {}, [],
+      { type: 'reference', datasetSlug: 'timeline-options' }),
+    makeComponentDef('partnership-type', 'select', 'field', 'Partnership Type', 'نوع الشراكة', { type: 'string' }, {}, [],
+      { type: 'reference', datasetSlug: 'partnership-types' }),
     makeComponentDef('additional-notes', 'textarea', 'field', 'Additional Notes', 'ملاحظات إضافية', { type: 'string' }, { rows: 4 }),
     makeComponentDef('review-summary', 'review-panel', 'composite', 'Review Summary', 'ملخص المراجعة', { type: 'object' }, { readOnly: true }),
   ],
@@ -346,27 +338,15 @@ const dueDiligence: ExperienceTemplate = {
     ]),
     makeComponentDef('financial-docs', 'file-upload', 'field', 'Financial Statements', 'البيانات المالية', { type: 'array', items: { type: 'string', format: 'uri' } }, { accept: '.pdf,.xlsx', maxFiles: 10 }),
     makeComponentDef('legal-docs', 'file-upload', 'field', 'Legal Documents', 'المستندات القانونية', { type: 'array', items: { type: 'string', format: 'uri' } }, { accept: '.pdf', maxFiles: 10 }),
-    makeComponentDef('kyc-status', 'select', 'field', 'KYC Status', 'حالة اعرف عميلك', { type: 'string', enum: ['pending', 'in_review', 'verified', 'rejected'] }, { options: [
-      { value: 'pending', label: 'Pending' },
-      { value: 'in_review', label: 'In Review' },
-      { value: 'verified', label: 'Verified' },
-      { value: 'rejected', label: 'Rejected' },
-    ] }, [
+    makeComponentDef('kyc-status', 'select', 'field', 'KYC Status', 'حالة اعرف عميلك', { type: 'string' }, {}, [
       { rule: 'required', message_en: 'KYC status is required', message_ar: 'حالة اعرف عميلك مطلوبة' },
-    ]),
-    makeComponentDef('sanctions-check', 'select', 'field', 'Sanctions Screening', 'فحص العقوبات', { type: 'string', enum: ['clear', 'flagged', 'pending'] }, { options: [
-      { value: 'clear', label: 'Clear' },
-      { value: 'flagged', label: 'Flagged' },
-      { value: 'pending', label: 'Pending' },
-    ] }),
+    ], { type: 'reference', datasetSlug: 'kyc-statuses' }),
+    makeComponentDef('sanctions-check', 'select', 'field', 'Sanctions Screening', 'فحص العقوبات', { type: 'string' }, {}, [],
+      { type: 'reference', datasetSlug: 'sanctions-check-statuses' }),
     makeComponentDef('compliance-notes', 'textarea', 'field', 'Compliance Notes', 'ملاحظات الامتثال', { type: 'string' }, { rows: 4 }),
-    makeComponentDef('approval-decision', 'select', 'action', 'Approval Decision', 'قرار الموافقة', { type: 'string', enum: ['approved', 'rejected', 'deferred'] }, { options: [
-      { value: 'approved', label: 'Approved' },
-      { value: 'rejected', label: 'Rejected' },
-      { value: 'deferred', label: 'Deferred' },
-    ] }, [
+    makeComponentDef('approval-decision', 'select', 'action', 'Approval Decision', 'قرار الموافقة', { type: 'string' }, {}, [
       { rule: 'required', message_en: 'Decision is required', message_ar: 'القرار مطلوب' },
-    ]),
+    ], { type: 'reference', datasetSlug: 'approval-decisions' }),
     makeComponentDef('approval-notes', 'textarea', 'field', 'Approval Notes', 'ملاحظات الموافقة', { type: 'string' }, { rows: 3 }),
   ],
   pageConfig: {

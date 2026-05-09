@@ -25,6 +25,8 @@ export interface ReferenceDataset {
   description?: string;
   entries: ReferenceEntry[];
   version: number;
+  /** System datasets are seeded by default and cannot be deleted */
+  isSystem?: boolean;
 }
 
 // In-memory cache with TTL
@@ -85,6 +87,11 @@ export class ReferenceDataManager {
   }
 
   async deleteDataset(id: string): Promise<void> {
+    // Check if system dataset — prevent deletion
+    const dataset = await this.getDatasetById(id);
+    if (dataset?.isSystem) {
+      throw new Error(`Cannot delete system dataset "${dataset.datasetSlug}". System datasets are protected.`);
+    }
     await this.entityLayer.deleteEntity('reference-data', id);
     for (const [slug, cached] of datasetCache) {
       if (cached.data.id === id) {
@@ -92,6 +99,13 @@ export class ReferenceDataManager {
         break;
       }
     }
+  }
+
+  private async getDatasetById(id: string): Promise<ReferenceDataset | null> {
+    try {
+      const record = await this.entityLayer.getEntity('reference-data', id);
+      return this.toDataset(record);
+    } catch { return null; }
   }
 
   invalidateCache(slug?: string): void {
@@ -115,6 +129,7 @@ export class ReferenceDataManager {
       description: record.description as string | undefined,
       entries: (entries ?? []) as ReferenceEntry[],
       version: (record.version as number) ?? 1,
+      isSystem: (record.isSystem as boolean) ?? false,
     };
   }
 }
