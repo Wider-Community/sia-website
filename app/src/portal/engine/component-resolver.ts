@@ -12,11 +12,14 @@ import type {
   ResolvedComponent,
   DynamicComponentProps,
   I18nLabels,
+  DataSourceBinding,
 } from './types';
 import { definitionCache, instanceCache } from './cache-manager';
 import { rendererRegistry } from './renderer-registry';
 import { resolveRendererForSchema } from './schema-adaptive';
 import type { ComponentRegistry } from './component-registry';
+import { getReferenceDataManager, getEntityLayer } from './hooks-internal';
+import { ENTITY_REGISTRY } from '../lib/entity-registry';
 
 export class ComponentResolver {
   constructor(private registry: ComponentRegistry) {}
@@ -62,6 +65,18 @@ export class ComponentResolver {
     // Schema-adaptive config fills gaps (e.g. select options from enum) that
     // defaultConfig might not have.
     const finalConfig = { ...schemaConfig, ...config };
+
+    // 3. If component has a data source binding, resolve options into config
+    if (definition.dataSource && definition.dataSource.type !== 'none') {
+      try {
+        const dsOptions = await this.resolveDataSourceOptions(definition.dataSource);
+        if (dsOptions.length > 0) {
+          finalConfig.options = dsOptions;
+        }
+      } catch (err) {
+        console.warn(`[Resolver] Failed to resolve data source for ${definition.slug}:`, err);
+      }
+    }
 
     console.log(`[Resolver] ${definition.slug}: renderer="${definition.renderer}", config keys=${Object.keys(finalConfig).join(',')}, i18n.label="${i18n.label}"`);
 
@@ -191,6 +206,35 @@ export class ComponentResolver {
       placeholder: instanceOverrides.placeholder ?? defLabels.placeholder,
       helpText: instanceOverrides.helpText ?? defLabels.helpText,
     };
+  }
+
+  private async resolveDataSourceOptions(
+    binding: DataSourceBinding,
+  ): Promise<Array<{ value: string; label: string }>> {
+    if (binding.type === 'reference' && binding.datasetSlug) {
+      const manager = getReferenceDataManager();
+      const dataset = await manager.getDataset(binding.datasetSlug);
+      if (!dataset) return [];
+      return dataset.entries.map((e) => ({ value: e.value, label: e.label_en }));
+    }
+
+    if (binding.type === 'entity' && binding.resource) {
+      const entityLayer = getEntityLayer();
+      const filters = binding.filters?.map((f) => ({
+        field: f.field,
+        operator: f.operator as 'eq',
+        value: f.value as string,
+      }));
+      const result = await entityLayer.listEntities(binding.resource, { filters });
+      const displayField = binding.displayField ?? ENTITY_REGISTRY[binding.resource]?.titleField ?? 'id';
+      const valueField = binding.valueField ?? 'id';
+      return result.data.map((record) => ({
+        value: String((record as Record<string, unknown>)[valueField] ?? (record as Record<string, unknown>).id),
+        label: String((record as Record<string, unknown>)[displayField] ?? (record as Record<string, unknown>).id),
+      }));
+    }
+
+    return [];
   }
 
   private resolveRendererWithConfig(
