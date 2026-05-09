@@ -14,8 +14,9 @@ import {
 } from '../schemas';
 import { migrateZodSchema } from './field-migration';
 import { EXPERIENCE_TEMPLATES, instantiateTemplate } from './experience-templates';
-import { getRegistry, getEntityLayer } from './hooks-internal';
+import { getRegistry, getEntityLayer, getReferenceDataManager } from './hooks-internal';
 import type { ComponentDefinition } from './types';
+import type { ReferenceEntry } from './reference-data';
 
 export interface SeedResult {
   created: number;
@@ -107,6 +108,23 @@ export async function seedEngine(force = false): Promise<SeedResult> {
     }
   }
 
+  // ── 3B. Seed reference datasets ──────────────────────────────────────────
+  const refManager = getReferenceDataManager();
+  for (const ds of DEFAULT_DATASETS) {
+    try {
+      const existing = await refManager.getDataset(ds.datasetSlug);
+      if (!existing) {
+        await refManager.createDataset(ds);
+        result.created++;
+      } else {
+        result.skipped++;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      result.errors.push(`Reference ${ds.datasetSlug}: ${msg}`);
+    }
+  }
+
   // ── 4. Create seed marker to prevent re-seeding ─────────────────────────
   try {
     await registry.createDefinition({
@@ -146,6 +164,7 @@ export async function clearEngine(): Promise<{ deleted: number; errors: string[]
     'notification-definitions',
     'flow-definitions',
     'component-definitions',
+    'reference-data',
   ];
 
   for (const resource of resources) {
@@ -166,3 +185,85 @@ export async function clearEngine(): Promise<{ deleted: number; errors: string[]
 
   return { deleted, errors };
 }
+
+const DEFAULT_DATASETS: Array<{
+  datasetSlug: string;
+  name_en: string;
+  name_ar: string;
+  entries: ReferenceEntry[];
+}> = [
+  {
+    datasetSlug: 'countries',
+    name_en: 'Countries',
+    name_ar: 'الدول',
+    entries: [
+      { value: 'SA', label_en: 'Saudi Arabia', label_ar: 'المملكة العربية السعودية', order: 1 },
+      { value: 'MY', label_en: 'Malaysia', label_ar: 'ماليزيا', order: 2 },
+      { value: 'AE', label_en: 'United Arab Emirates', label_ar: 'الإمارات العربية المتحدة', order: 3 },
+      { value: 'BH', label_en: 'Bahrain', label_ar: 'البحرين', order: 4 },
+      { value: 'KW', label_en: 'Kuwait', label_ar: 'الكويت', order: 5 },
+      { value: 'OM', label_en: 'Oman', label_ar: 'عُمان', order: 6 },
+      { value: 'QA', label_en: 'Qatar', label_ar: 'قطر', order: 7 },
+      { value: 'SG', label_en: 'Singapore', label_ar: 'سنغافورة', order: 8 },
+      { value: 'ID', label_en: 'Indonesia', label_ar: 'إندونيسيا', order: 9 },
+      { value: 'GB', label_en: 'United Kingdom', label_ar: 'المملكة المتحدة', order: 10 },
+      { value: 'US', label_en: 'United States', label_ar: 'الولايات المتحدة', order: 11 },
+    ],
+  },
+  {
+    datasetSlug: 'currencies',
+    name_en: 'Currencies',
+    name_ar: 'العملات',
+    entries: [
+      { value: 'SAR', label_en: 'Saudi Riyal (SAR)', label_ar: 'ريال سعودي', order: 1 },
+      { value: 'MYR', label_en: 'Malaysian Ringgit (MYR)', label_ar: 'رينغيت ماليزي', order: 2 },
+      { value: 'AED', label_en: 'UAE Dirham (AED)', label_ar: 'درهم إماراتي', order: 3 },
+      { value: 'USD', label_en: 'US Dollar (USD)', label_ar: 'دولار أمريكي', order: 4 },
+      { value: 'GBP', label_en: 'British Pound (GBP)', label_ar: 'جنيه إسترليني', order: 5 },
+      { value: 'SGD', label_en: 'Singapore Dollar (SGD)', label_ar: 'دولار سنغافوري', order: 6 },
+    ],
+  },
+  {
+    datasetSlug: 'sectors',
+    name_en: 'Sectors',
+    name_ar: 'القطاعات',
+    entries: [
+      { value: 'energy', label_en: 'Energy', label_ar: 'الطاقة', order: 1 },
+      { value: 'technology', label_en: 'Technology', label_ar: 'التكنولوجيا', order: 2 },
+      { value: 'finance', label_en: 'Finance', label_ar: 'التمويل', order: 3 },
+      { value: 'healthcare', label_en: 'Healthcare', label_ar: 'الرعاية الصحية', order: 4 },
+      { value: 'infrastructure', label_en: 'Infrastructure', label_ar: 'البنية التحتية', order: 5 },
+      { value: 'manufacturing', label_en: 'Manufacturing', label_ar: 'التصنيع', order: 6 },
+      { value: 'real-estate', label_en: 'Real Estate', label_ar: 'العقارات', order: 7 },
+      { value: 'tourism', label_en: 'Tourism & Hospitality', label_ar: 'السياحة والضيافة', order: 8 },
+      { value: 'education', label_en: 'Education', label_ar: 'التعليم', order: 9 },
+      { value: 'agriculture', label_en: 'Agriculture', label_ar: 'الزراعة', order: 10 },
+    ],
+  },
+  {
+    datasetSlug: 'organization-types',
+    name_en: 'Organization Types',
+    name_ar: 'أنواع المنظمات',
+    entries: [
+      { value: 'investor', label_en: 'Investor', label_ar: 'مستثمر', order: 1 },
+      { value: 'company', label_en: 'Company', label_ar: 'شركة', order: 2 },
+      { value: 'government', label_en: 'Government Entity', label_ar: 'جهة حكومية', order: 3 },
+      { value: 'ngo', label_en: 'NGO', label_ar: 'منظمة غير ربحية', order: 4 },
+      { value: 'fund', label_en: 'Investment Fund', label_ar: 'صندوق استثماري', order: 5 },
+      { value: 'accelerator', label_en: 'Accelerator / Incubator', label_ar: 'مسرّعة أعمال', order: 6 },
+    ],
+  },
+  {
+    datasetSlug: 'deal-stages',
+    name_en: 'Deal Stages',
+    name_ar: 'مراحل الصفقة',
+    entries: [
+      { value: 'prospect', label_en: 'Prospect', label_ar: 'احتمال', order: 1 },
+      { value: 'introduction', label_en: 'Introduction', label_ar: 'تعارف', order: 2 },
+      { value: 'due-diligence', label_en: 'Due Diligence', label_ar: 'العناية الواجبة', order: 3 },
+      { value: 'negotiation', label_en: 'Negotiation', label_ar: 'تفاوض', order: 4 },
+      { value: 'signing', label_en: 'Signing', label_ar: 'توقيع', order: 5 },
+      { value: 'closed', label_en: 'Closed', label_ar: 'مغلق', order: 6 },
+    ],
+  },
+];
