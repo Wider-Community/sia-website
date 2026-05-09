@@ -80,6 +80,7 @@ function makeComponentDef(
   dataSchema: ComponentDefinition['dataSchema'],
   defaultConfig: Record<string, unknown> = {},
   validations: ComponentDefinition['validations'] = [],
+  dataSource?: ComponentDefinition['dataSource'],
 ): Omit<ComponentDefinition, 'id' | 'nodeType' | 'version'> {
   return {
     slug,
@@ -88,6 +89,7 @@ function makeComponentDef(
     dataSchema,
     defaultConfig,
     validations,
+    dataSource,
     i18n: {
       en: { label: label_en },
       ar: { label: label_ar },
@@ -151,31 +153,15 @@ const organizationOnboarding: ExperienceTemplate = {
     makeComponentDef('org-name', 'text-input', 'field', 'Organization Name', 'اسم المنظمة', { type: 'string', minLength: 2 }, {}, [
       { rule: 'required', message_en: 'Organization name is required', message_ar: 'اسم المنظمة مطلوب' },
     ]),
-    makeComponentDef('org-country', 'select', 'field', 'Country', 'الدولة', { type: 'string', enum: ['SA', 'MY', 'AE', 'other'] }, { options: [
-      { value: 'SA', label: 'Saudi Arabia' },
-      { value: 'MY', label: 'Malaysia' },
-      { value: 'AE', label: 'UAE' },
-      { value: 'other', label: 'Other' },
-    ] }, [
+    makeComponentDef('org-country', 'select', 'field', 'Country', 'الدولة', { type: 'string' }, {}, [
       { rule: 'required', message_en: 'Country is required', message_ar: 'الدولة مطلوبة' },
-    ]),
-    makeComponentDef('org-type', 'select', 'field', 'Organization Type', 'نوع المنظمة', { type: 'string', enum: ['investor', 'company', 'government', 'ngo'] }, { options: [
-      { value: 'investor', label: 'Investor' },
-      { value: 'company', label: 'Company' },
-      { value: 'government', label: 'Government Entity' },
-      { value: 'ngo', label: 'NGO' },
-    ] }, [
+    ], { type: 'reference', datasetSlug: 'countries' }),
+    makeComponentDef('org-type', 'select', 'field', 'Organization Type', 'نوع المنظمة', { type: 'string' }, {}, [
       { rule: 'required', message_en: 'Type is required', message_ar: 'النوع مطلوب' },
-    ]),
-    makeComponentDef('primary-sector', 'select', 'field', 'Primary Sector', 'القطاع الرئيسي', { type: 'string' }, { options: [
-      { value: 'energy', label: 'Energy' },
-      { value: 'technology', label: 'Technology' },
-      { value: 'finance', label: 'Finance' },
-      { value: 'healthcare', label: 'Healthcare' },
-      { value: 'infrastructure', label: 'Infrastructure' },
-    ] }, [
+    ], { type: 'reference', datasetSlug: 'organization-types' }),
+    makeComponentDef('primary-sector', 'select', 'field', 'Primary Sector', 'القطاع الرئيسي', { type: 'string' }, {}, [
       { rule: 'required', message_en: 'Primary sector is required', message_ar: 'القطاع الرئيسي مطلوب' },
-    ]),
+    ], { type: 'reference', datasetSlug: 'sectors' }),
     makeComponentDef('sub-sectors', 'multi-select', 'field', 'Sub-sectors', 'القطاعات الفرعية', { type: 'array', items: { type: 'string' } }),
     makeComponentDef('contact-name', 'text-input', 'field', 'Contact Name', 'اسم جهة الاتصال', { type: 'string' }, {}, [
       { rule: 'required', message_en: 'Contact name is required', message_ar: 'اسم جهة الاتصال مطلوب' },
@@ -269,20 +255,13 @@ const dealMatching: ExperienceTemplate = {
       { rule: 'required', message_en: 'Deal size is required', message_ar: 'حجم الصفقة مطلوب' },
       { rule: 'min', value: 0, message_en: 'Must be positive', message_ar: 'يجب أن يكون إيجابيًا' },
     ]),
-    makeComponentDef('deal-sector', 'select', 'field', 'Primary Deal Sector', 'قطاع الصفقة الرئيسي', { type: 'string' }, { options: [
-      { value: 'energy', label: 'Energy' },
-      { value: 'technology', label: 'Technology' },
-      { value: 'finance', label: 'Finance' },
-      { value: 'healthcare', label: 'Healthcare' },
-      { value: 'infrastructure', label: 'Infrastructure' },
-    ] }, [
+    makeComponentDef('deal-sector', 'select', 'field', 'Primary Deal Sector', 'قطاع الصفقة الرئيسي', { type: 'string' }, {}, [
       { rule: 'required', message_en: 'Sector is required', message_ar: 'القطاع مطلوب' },
-    ]),
-    makeComponentDef('target-sectors', 'multi-select', 'field', 'Target Sectors', 'القطاعات المستهدفة', { type: 'array', items: { type: 'string' } }),
-    makeComponentDef('target-countries', 'multi-select', 'field', 'Target Countries', 'الدول المستهدفة', { type: 'array', items: { type: 'string' } }, { options: [
-      { value: 'SA', label: 'Saudi Arabia' },
-      { value: 'MY', label: 'Malaysia' },
-    ] }),
+    ], { type: 'reference', datasetSlug: 'sectors' }),
+    makeComponentDef('target-sectors', 'multi-select', 'field', 'Target Sectors', 'القطاعات المستهدفة', { type: 'array', items: { type: 'string' } }, {},
+      [], { type: 'reference', datasetSlug: 'sectors' }),
+    makeComponentDef('target-countries', 'multi-select', 'field', 'Target Countries', 'الدول المستهدفة', { type: 'array', items: { type: 'string' } }, {},
+      [], { type: 'reference', datasetSlug: 'countries' }),
     makeComponentDef('deal-range', 'range-input', 'field', 'Deal Range (USD)', 'نطاق الصفقة (دولار)', { type: 'object', properties: { min: { type: 'number' }, max: { type: 'number' } } }),
     makeComponentDef('timeline', 'select', 'field', 'Expected Timeline', 'الجدول الزمني المتوقع', { type: 'string' }, { options: [
       { value: '3m', label: '3 months' },
