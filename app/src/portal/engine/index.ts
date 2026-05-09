@@ -117,3 +117,8 @@ export {
   instantiateTemplate,
 } from './experience-templates';
 export type { ExperienceTemplate, InstantiatedExperience } from './experience-templates';
+
+// Reference data & data source hooks
+export { ReferenceDataManager } from './reference-data';
+export type { ReferenceDataset, ReferenceEntry } from './reference-data';
+export { useReferenceData, useReferenceDatasets, useEntityResources, useDataSource } from './hooks';
