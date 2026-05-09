@@ -135,6 +135,23 @@ export class FlowEngine {
     return result.data.map((r) => this.toFlowSession(r));
   }
 
+  async listAllSessions(filters?: {
+    status?: string;
+    userId?: string;
+  }): Promise<FlowSession[]> {
+    const crudFilters: Array<{ field: string; operator: 'eq'; value: string }> = [];
+    if (filters?.status) {
+      crudFilters.push({ field: 'status', operator: 'eq', value: filters.status });
+    }
+    if (filters?.userId) {
+      crudFilters.push({ field: 'userId', operator: 'eq', value: filters.userId });
+    }
+    const result = await this.entityLayer.listEntities('flow-sessions', {
+      filters: crudFilters,
+    });
+    return result.data.map((r) => this.toFlowSession(r));
+  }
+
   async getSession(sessionId: string): Promise<FlowSession | null> {
     try {
       const record = await this.entityLayer.getEntity(
