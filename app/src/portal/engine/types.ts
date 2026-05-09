@@ -48,6 +48,29 @@ export interface ValidationRule {
   message_ar: string;
 }
 
+// ---------------------------------------------------------------------------
+// Data Source Binding
+// ---------------------------------------------------------------------------
+
+export interface DataSourceBinding {
+  /** 'none' = static options from defaultConfig, 'reference' = system reference dataset, 'entity' = live Mujarrad resource */
+  type: 'none' | 'reference' | 'entity';
+  /** For type 'reference': slug of the reference dataset (e.g. 'countries', 'sectors') */
+  datasetSlug?: string;
+  /** For type 'entity': resource key from ENTITY_REGISTRY (e.g. 'organizations', 'contacts') */
+  resource?: string;
+  /** For type 'entity': which field to display as the option label */
+  displayField?: string;
+  /** For type 'entity': which field to use as the option value (default: 'id') */
+  valueField?: string;
+  /** Optional static filters to narrow the dataset */
+  filters?: Array<{
+    field: string;
+    operator: string;
+    value: unknown;
+  }>;
+}
+
 export interface I18nLabels {
   label: string;
   placeholder?: string;
@@ -68,6 +91,7 @@ export interface ComponentDefinition {
     ar: I18nLabels;
   };
   composedOf?: string[];
+  dataSource?: DataSourceBinding;
   version: number;
   status: 'draft' | 'published' | 'deprecated';
 }
