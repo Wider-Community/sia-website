@@ -22,39 +22,57 @@ export class ComponentResolver {
   constructor(private registry: ComponentRegistry) {}
 
   /**
-   * Resolve a component instance into a renderable component.
-   * This is the main entry point for the engine.
+   * Resolve a component into a renderable component.
+   *
+   * Accepts either an instance ID or a definition ID:
+   * - If an instance is found, it merges instance overrides with the definition.
+   * - If no instance is found, it falls back to treating the ID as a definition
+   *   ID and renders directly from the definition (no overrides).
    */
   async resolve(
-    instanceId: string,
+    id: string,
     locale: 'en' | 'ar' = 'en',
   ): Promise<ResolvedComponent> {
-    // 1. Get instance (from cache or fetch)
-    const instance = await this.resolveInstance(instanceId);
+    // 1. Try to get instance
+    const instance = await this.tryResolveInstance(id);
 
-    // 2. Get definition (from cache or fetch)
-    const definition = await this.resolveDefinition(instance.definitionId);
+    let definition: ComponentDefinition;
+    let config: Record<string, unknown>;
+    let i18n: I18nLabels;
+    let resolvedInstanceId: string;
 
-    // 3. Merge config (definition defaults + instance overrides)
-    const config = this.mergeConfig(
-      definition.defaultConfig,
-      instance.configOverrides,
-    );
+    if (instance) {
+      // Instance found — resolve its definition and merge overrides
+      definition = await this.resolveDefinition(instance.definitionId);
+      config = this.mergeConfig(definition.defaultConfig, instance.configOverrides);
+      i18n = this.resolveI18n(definition, instance, locale);
+      resolvedInstanceId = instance.id;
+    } else {
+      // No instance — treat the ID as a definition ID (fallback)
+      definition = await this.resolveDefinition(id);
+      config = { ...definition.defaultConfig };
+      i18n = definition.i18n[locale] ?? definition.i18n.en;
+      resolvedInstanceId = id;
+    }
 
-    // 4. Resolve i18n (definition labels + instance overrides)
-    const i18n = this.resolveI18n(definition, instance, locale);
+    // 2. Get renderer component + merge schema-adaptive config if needed
+    const { Component, schemaConfig } = this.resolveRendererWithConfig(definition);
 
-    // 5. Get renderer component
-    const Component = this.resolveRenderer(definition);
+    // Merge: definition defaults → schema-adaptive inferences → instance overrides
+    // Schema-adaptive config fills gaps (e.g. select options from enum) that
+    // defaultConfig might not have.
+    const finalConfig = { ...schemaConfig, ...config };
+
+    console.log(`[Resolver] ${definition.slug}: renderer="${definition.renderer}", config keys=${Object.keys(finalConfig).join(',')}, i18n.label="${i18n.label}"`);
 
     return {
       Component,
-      config,
+      config: finalConfig,
       validations: definition.validations,
       i18n,
       dataSchema: definition.dataSchema,
       definitionId: definition.id,
-      instanceId: instance.id,
+      instanceId: resolvedInstanceId,
     };
   }
 
@@ -63,10 +81,19 @@ export class ComponentResolver {
    * Uses cache effectively — definitions shared across instances only fetched once.
    */
   async resolveMany(
-    instanceIds: string[],
+    ids: string[],
     locale: 'en' | 'ar' = 'en',
   ): Promise<ResolvedComponent[]> {
-    return Promise.all(instanceIds.map((id) => this.resolve(id, locale)));
+    const results: ResolvedComponent[] = [];
+    for (const id of ids) {
+      try {
+        const resolved = await this.resolve(id, locale);
+        results.push(resolved);
+      } catch (err) {
+        console.warn(`[ComponentResolver] Skipping component "${id}":`, err);
+      }
+    }
+    return results;
   }
 
   /**
@@ -103,21 +130,24 @@ export class ComponentResolver {
   // Internal resolution steps
   // ---------------------------------------------------------------------------
 
-  private async resolveInstance(
-    instanceId: string,
-  ): Promise<ComponentInstance> {
+  private async tryResolveInstance(
+    id: string,
+  ): Promise<ComponentInstance | null> {
     // Check cache first
-    const cached = instanceCache.get(instanceId);
+    const cached = instanceCache.get(id);
     if (cached) return cached;
 
     // Fetch from Mujarrad
-    const instance = await this.registry.getInstance(instanceId);
-    if (!instance) {
-      throw new Error(`Component instance "${instanceId}" not found`);
-    }
+    const instance = await this.registry.getInstance(id);
+    if (!instance) return null;
+
+    // Validate it's actually an instance (has a definitionId) — getEntity
+    // ignores the resource type, so a definition ID would return the
+    // definition node parsed as an instance with definitionId=undefined.
+    if (!instance.definitionId) return null;
 
     // Cache it (instances don't have versions, use 1)
-    instanceCache.set(instanceId, instance, 1);
+    instanceCache.set(id, instance, 1);
     return instance;
   }
 
@@ -163,18 +193,26 @@ export class ComponentResolver {
     };
   }
 
-  private resolveRenderer(
+  private resolveRendererWithConfig(
     definition: ComponentDefinition,
-  ): React.ComponentType<DynamicComponentProps> {
+  ): { Component: React.ComponentType<DynamicComponentProps>; schemaConfig: Record<string, unknown> } {
     // Try explicit renderer from definition
     const explicit = rendererRegistry.get(definition.renderer);
-    if (explicit) return explicit;
+    if (explicit) {
+      // Even with an explicit renderer, derive schema config as a fallback
+      // (e.g. select options from dataSchema.enum when defaultConfig has none)
+      const { config: schemaConfig } = resolveRendererForSchema(
+        definition.dataSchema,
+        definition.slug,
+      );
+      return { Component: explicit, schemaConfig };
+    }
 
-    // Fall back to schema-adaptive resolution
-    const { Component } = resolveRendererForSchema(
+    // Fall back to schema-adaptive resolution (component + config)
+    const { Component, config: schemaConfig } = resolveRendererForSchema(
       definition.dataSchema,
       definition.slug,
     );
-    return Component;
+    return { Component, schemaConfig };
   }
 }

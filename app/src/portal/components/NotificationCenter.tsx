@@ -75,8 +75,19 @@ export function NotificationCenter() {
     }
 
     if (alert.entityId) {
-      if (alert.entityType === "organization") {
-        navigate(`/portal/organizations/${alert.entityId}`);
+      switch (alert.entityType) {
+        case "organization":
+          navigate(`/portal/organizations/${alert.entityId}`);
+          break;
+        case "flow":
+          navigate(`/portal/flows/${alert.entityId}`);
+          break;
+        case "match":
+          navigate(`/portal/matches/${alert.entityId}`);
+          break;
+        case "component-definition":
+          navigate("/portal/control-board");
+          break;
       }
     }
 

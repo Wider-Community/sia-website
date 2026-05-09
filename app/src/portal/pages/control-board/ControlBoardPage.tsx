@@ -33,14 +33,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Sprout } from "lucide-react";
+import { toast } from "sonner";
 import { PageShell } from "../../components/PageShell";
 import { PageHeader } from "../../components/PageHeader";
+import { seedEngine } from "../../engine/seed";
 import { useComponentRegistry } from "../../engine/hooks";
 import type { ComponentCategory, ComponentDefinition } from "../../engine/types";
 import { AuthorizationTab } from "./AuthorizationTab";
 import { FlowDesigner } from "./FlowDesigner";
 import { NotificationManagerTab } from "./NotificationManagerTab";
+import { EnginePlayground } from "./EnginePlayground";
 
 const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
   published: "default",
@@ -114,6 +117,35 @@ export function ControlBoardPage() {
     updateDefinition,
     deleteDefinition,
   } = useComponentRegistry();
+
+  const [seeding, setSeeding] = useState(false);
+
+  const handleSeedEngine = useCallback(async (force = false) => {
+    setSeeding(true);
+    try {
+      const result = await seedEngine(force);
+      if (result.skipped === -1) {
+        toast.info("Engine already seeded. Click 'Re-seed' to force a fresh seed.");
+      } else {
+        toast.success(
+          `Seed complete: ${result.created} created, ${result.skipped} skipped, ${result.templates} templates.` +
+            (result.errors.length > 0
+              ? ` ${result.errors.length} error(s) — check console.`
+              : ""),
+        );
+        if (result.errors.length > 0) {
+          console.warn("Seed errors:", result.errors);
+        }
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Seed failed — see console.",
+      );
+      console.error("seedEngine() failed:", err);
+    } finally {
+      setSeeding(false);
+    }
+  }, []);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -238,12 +270,33 @@ export function ControlBoardPage() {
       <PageHeader title="Control Board" />
 
       <Tabs defaultValue="components">
+        <div className="flex items-center justify-between gap-4">
         <TabsList>
           <TabsTrigger value="components">Components</TabsTrigger>
           <TabsTrigger value="flows">Flows</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="authorization">Authorization</TabsTrigger>
+          <TabsTrigger value="playground">Playground</TabsTrigger>
         </TabsList>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleSeedEngine(false)}
+              disabled={seeding}
+            >
+              <Sprout className="mr-2 h-4 w-4" />
+              {seeding ? "Seeding..." : "Seed Engine"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSeedEngine(true)}
+              disabled={seeding}
+            >
+              {seeding ? "..." : "Re-seed"}
+            </Button>
+          </div>
+        </div>
 
         <TabsContent value="components" className="space-y-4">
           {/* Toolbar */}
@@ -341,6 +394,10 @@ export function ControlBoardPage() {
 
         <TabsContent value="authorization" className="space-y-4">
           <AuthorizationTab />
+        </TabsContent>
+
+        <TabsContent value="playground" className="space-y-4">
+          <EnginePlayground />
         </TabsContent>
       </Tabs>
 

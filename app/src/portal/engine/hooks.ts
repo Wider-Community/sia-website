@@ -144,7 +144,10 @@ export function useFlowStage(
   const idsKey = componentInstanceIds.join(',');
 
   useEffect(() => {
+    console.log('[useFlowStage] IDs received:', idsRef.current);
+
     if (!idsRef.current.length) {
+      console.warn('[useFlowStage] Empty componentOrder — no IDs to resolve');
       setComponents([]);
       return;
     }
@@ -157,12 +160,14 @@ export function useFlowStage(
       .resolveMany(idsRef.current, locale)
       .then((results) => {
         if (!cancelled) {
+          console.log('[useFlowStage] Resolved', results.length, 'components from', idsRef.current.length, 'IDs');
           setComponents(results);
           setLoading(false);
         }
       })
       .catch((err) => {
         if (!cancelled) {
+          console.error('[useFlowStage] Resolution failed:', err);
           setError(err instanceof Error ? err : new Error(String(err)));
           setLoading(false);
         }
@@ -194,6 +199,7 @@ interface UseDynamicFormResult {
 export function useDynamicForm(
   componentInstanceIds: string[],
   locale: 'en' | 'ar' = 'en',
+  requiredComponentIds?: string[],
 ): UseDynamicFormResult {
   const { components, loading, error } = useFlowStage(
     componentInstanceIds,
@@ -201,6 +207,12 @@ export function useDynamicForm(
   );
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string[]>>({});
+
+  // Build a set of required component IDs for quick lookup
+  const requiredSet = useMemo(
+    () => new Set(requiredComponentIds ?? []),
+    [requiredComponentIds],
+  );
 
   const setValue = useCallback(
     (instanceId: string, value: unknown) => {
@@ -238,6 +250,20 @@ export function useDynamicForm(
       const fieldErrors: string[] = [];
       const value = values[comp.instanceId];
 
+      // Check stage-level required (from flow designer)
+      const isStageRequired = requiredSet.has(comp.instanceId);
+      if (isStageRequired) {
+        if (
+          value === undefined ||
+          value === null ||
+          value === '' ||
+          (Array.isArray(value) && value.length === 0)
+        ) {
+          fieldErrors.push(`${comp.i18n.label} is required`);
+        }
+      }
+
+      // Check definition-level validations
       for (const rule of comp.validations) {
         switch (rule.rule) {
           case 'required':
@@ -279,7 +305,7 @@ export function useDynamicForm(
 
     setErrors(newErrors);
     return valid;
-  }, [components, values]);
+  }, [components, values, requiredSet]);
 
   const getFormData = useCallback((): Record<string, unknown> => {
     return { ...values };
@@ -474,6 +500,7 @@ interface UseFlowEngineResult {
   createFlow: (flow: Omit<FlowDefinition, 'id' | 'nodeType' | 'version'>) => Promise<FlowDefinition>;
   updateFlow: (id: string, updates: Partial<FlowDefinition>) => Promise<FlowDefinition>;
   deleteFlow: (id: string) => Promise<void>;
+  listSessions: (flowId: string, filters?: { status?: string }) => Promise<FlowSession[]>;
   startSession: (flowId: string, userId: string) => Promise<FlowSession>;
   submitStage: (sessionId: string, data: Record<string, unknown>) => Promise<{ nextStageId: string | null; session: FlowSession }>;
   goBack: (sessionId: string) => Promise<FlowSession>;
@@ -515,6 +542,10 @@ export function useFlowEngine(filters?: { status?: string }): UseFlowEngineResul
     refresh();
   }, [refresh]);
 
+  const listSessions = useCallback(async (flowId: string, sessionFilters?: { status?: string }) => {
+    return getFlowEngine().listSessions(flowId, sessionFilters);
+  }, []);
+
   const startSession = useCallback(async (flowId: string, userId: string) => {
     return getFlowEngine().startSession(flowId, userId);
   }, []);
@@ -527,7 +558,7 @@ export function useFlowEngine(filters?: { status?: string }): UseFlowEngineResul
     return getFlowEngine().goBack(sessionId);
   }, []);
 
-  return { flows, loading, error, refresh, createFlow, updateFlow, deleteFlow, startSession, submitStage, goBack };
+  return { flows, loading, error, refresh, createFlow, updateFlow, deleteFlow, listSessions, startSession, submitStage, goBack };
 }
 
 // ---------------------------------------------------------------------------

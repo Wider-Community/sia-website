@@ -35,7 +35,8 @@ import {
   ChevronDown,
   X,
 } from "lucide-react";
-import { useFlowEngine } from "../../engine/hooks";
+import { useFlowEngine, useComponentRegistry } from "../../engine/hooks";
+import { getRegistry } from "../../engine/hooks-internal";
 import type {
   FlowDefinition,
   FlowMetadata,
@@ -90,6 +91,11 @@ interface FlowFormState {
   stages: StageFormState[];
 }
 
+interface StageComponentEntry {
+  defId: string;
+  required: boolean;
+}
+
 interface StageFormState {
   id: string;
   slug: string;
@@ -97,7 +103,7 @@ interface StageFormState {
   labelAr: string;
   description: string;
   isTerminal: boolean;
-  componentOrder: string;
+  components: StageComponentEntry[];
   transitions: TransitionFormState[];
 }
 
@@ -152,7 +158,11 @@ function flowToForm(flow: FlowDefinition): FlowFormState {
       labelAr: s.metadata.label_ar,
       description: s.metadata.description ?? "",
       isTerminal: s.isTerminal,
-      componentOrder: s.componentOrder.join(", "),
+      // Store the raw IDs — these may be instance or definition IDs from prior saves
+      components: s.componentOrder.map((id) => ({
+        defId: id,
+        required: (s.requiredComponents ?? []).includes(id),
+      })),
       transitions: s.transitions.map((t) => ({
         id: t.id,
         toStageId: t.toStageId,
@@ -168,35 +178,55 @@ function flowToForm(flow: FlowDefinition): FlowFormState {
   };
 }
 
-function formToPayload(
+async function formToPayload(
   form: FlowFormState,
-): Omit<FlowDefinition, "id" | "nodeType" | "version"> {
-  const stages: StageDefinition[] = form.stages.map((s) => ({
-    id: s.id,
-    slug: s.slug,
-    metadata: {
-      label_en: s.labelEn,
-      label_ar: s.labelAr,
-      description: s.description || undefined,
-    } as StageMetadata,
-    isTerminal: s.isTerminal,
-    componentOrder: s.componentOrder
-      .split(",")
-      .map((id) => id.trim())
-      .filter(Boolean),
-    transitions: s.transitions.map((t) => ({
-      id: t.id,
-      fromStageId: s.id,
-      toStageId: t.toStageId,
-      priority: t.priority,
-      logic: t.logic,
-      conditions: t.conditions.map((c) => ({
-        field: c.field,
-        operator: c.operator,
-        value: tryParseJson(c.value),
+): Promise<Omit<FlowDefinition, "id" | "nodeType" | "version">> {
+  const registry = getRegistry();
+
+  const stages: StageDefinition[] = [];
+
+  for (const s of form.stages) {
+    const instanceIds: string[] = [];
+    const requiredInstanceIds: string[] = [];
+
+    for (let i = 0; i < s.components.length; i++) {
+      const entry = s.components[i];
+      const instance = await registry.createInstance({
+        definitionId: entry.defId,
+        configOverrides: {},
+        placement: { flowId: '', stageId: s.id, order: i },
+      });
+      instanceIds.push(instance.id);
+      if (entry.required) {
+        requiredInstanceIds.push(instance.id);
+      }
+    }
+
+    stages.push({
+      id: s.id,
+      slug: s.slug,
+      metadata: {
+        label_en: s.labelEn,
+        label_ar: s.labelAr,
+        description: s.description || undefined,
+      } as StageMetadata,
+      isTerminal: s.isTerminal,
+      componentOrder: instanceIds,
+      requiredComponents: requiredInstanceIds.length > 0 ? requiredInstanceIds : undefined,
+      transitions: s.transitions.map((t) => ({
+        id: t.id,
+        fromStageId: s.id,
+        toStageId: t.toStageId,
+        priority: t.priority,
+        logic: t.logic,
+        conditions: t.conditions.map((c) => ({
+          field: c.field,
+          operator: c.operator,
+          value: tryParseJson(c.value),
+        })),
       })),
-    })),
-  }));
+    });
+  }
 
   return {
     slug: form.slug.trim(),
@@ -226,6 +256,7 @@ function tryParseJson(value: string): unknown {
 export function FlowDesigner() {
   const { flows, loading, error, createFlow, updateFlow, deleteFlow } =
     useFlowEngine();
+  const { definitions: componentDefs } = useComponentRegistry();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -279,7 +310,7 @@ export function FlowDesigner() {
           labelAr: "",
           description: "",
           isTerminal: false,
-          componentOrder: "",
+          components: [],
           transitions: [],
         },
       ],
@@ -460,10 +491,10 @@ export function FlowDesigner() {
       return;
     }
 
-    const payload = formToPayload(form);
-
     setSaving(true);
     try {
+      const payload = await formToPayload(form);
+
       if (editingId) {
         await updateFlow(editingId, payload);
       } else {
@@ -804,19 +835,126 @@ export function FlowDesigner() {
                     </div>
                   </div>
 
-                  {/* Component instance IDs */}
+                  {/* Component selection */}
                   <div className="space-y-1.5">
                     <Label className="text-xs">
-                      Component Instance IDs (comma-separated)
+                      Components ({stage.components.length} selected)
                     </Label>
-                    <Input
-                      value={stage.componentOrder}
-                      onChange={(e) =>
-                        updateStage(si, "componentOrder", e.target.value)
-                      }
-                      placeholder="instance-1, instance-2, instance-3"
-                      className="h-8 text-sm font-mono"
-                    />
+
+                    {/* Selected components with required toggle */}
+                    {stage.components.length > 0 && (
+                      <div className="space-y-1.5 pb-1">
+                        {stage.components.map((entry, ci) => {
+                          const def = componentDefs.find((d) => d.id === entry.defId);
+                          return (
+                            <div
+                              key={entry.defId}
+                              className="flex items-center gap-2 rounded border bg-background px-2 py-1.5"
+                            >
+                              {/* Reorder up */}
+                              {ci > 0 && (
+                                <button
+                                  type="button"
+                                  className="rounded hover:bg-muted p-0.5"
+                                  onClick={() => {
+                                    const comps = [...stage.components];
+                                    [comps[ci - 1], comps[ci]] = [comps[ci], comps[ci - 1]];
+                                    updateStage(si, "components", comps);
+                                  }}
+                                >
+                                  <ChevronUp className="h-3 w-3" />
+                                </button>
+                              )}
+
+                              {/* Component name */}
+                              <span className="flex-1 text-xs">
+                                {def ? def.i18n.en.label : entry.defId}
+                                {def && (
+                                  <span className="ml-1 text-muted-foreground">
+                                    ({def.slug})
+                                  </span>
+                                )}
+                              </span>
+
+                              {/* Required toggle */}
+                              <div className="flex items-center gap-1.5">
+                                <Checkbox
+                                  id={`req-${stage.id}-${entry.defId}`}
+                                  checked={entry.required}
+                                  onCheckedChange={(checked) => {
+                                    const comps = [...stage.components];
+                                    comps[ci] = { ...comps[ci], required: checked === true };
+                                    updateStage(si, "components", comps);
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`req-${stage.id}-${entry.defId}`}
+                                  className="text-xs text-muted-foreground"
+                                >
+                                  Required
+                                </Label>
+                              </div>
+
+                              {/* Remove */}
+                              <button
+                                type="button"
+                                className="rounded hover:bg-destructive/20 p-0.5"
+                                onClick={() => {
+                                  updateStage(
+                                    si,
+                                    "components",
+                                    stage.components.filter((_, i) => i !== ci),
+                                  );
+                                }}
+                              >
+                                <X className="h-3 w-3 text-destructive" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Dropdown to add components */}
+                    <Select
+                      value=""
+                      onValueChange={(defId) => {
+                        if (!stage.components.some((c) => c.defId === defId)) {
+                          updateStage(si, "components", [
+                            ...stage.components,
+                            { defId, required: false },
+                          ]);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Add a component..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {componentDefs
+                          .filter((d) => d.status === "published")
+                          .map((def) => (
+                            <SelectItem
+                              key={def.id}
+                              value={def.id}
+                              disabled={stage.components.some((c) => c.defId === def.id)}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>{def.i18n.en.label}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({def.slug})
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        {componentDefs.filter((d) => d.status === "published")
+                          .length === 0 && (
+                          <SelectItem value="__none" disabled>
+                            No published components available
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Transitions (only for non-terminal stages) */}

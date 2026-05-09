@@ -168,6 +168,8 @@ export interface StageDefinition {
   metadata: StageMetadata;
   isTerminal: boolean;
   componentOrder: string[];
+  /** Component IDs that must be filled before the stage can advance */
+  requiredComponents?: string[];
   transitions: TransitionEdge[];
 }
 

@@ -438,7 +438,7 @@ export async function instantiateTemplate(
 ): Promise<InstantiatedExperience> {
   // 1. Create component definitions
   const components: ComponentDefinition[] = [];
-  const componentIdMap = new Map<string, string>(); // slug -> new ID
+  const componentDefIdMap = new Map<string, string>(); // slug -> definition ID
 
   for (const compTemplate of template.componentTemplates) {
     const record = await entityLayer.createEntity('component-definitions', {
@@ -453,14 +453,29 @@ export async function instantiateTemplate(
       ...compTemplate,
     };
     components.push(created);
-    componentIdMap.set(compTemplate.slug, record.id);
+    componentDefIdMap.set(compTemplate.slug, record.id);
   }
 
-  // 2. Create flow definition — remap component references in stages
+  // 2. Create component instances for each definition and build slug -> instance ID map
+  const componentInstanceIdMap = new Map<string, string>(); // slug -> instance ID
+
+  for (const compTemplate of template.componentTemplates) {
+    const definitionId = componentDefIdMap.get(compTemplate.slug);
+    if (!definitionId) continue;
+
+    const instanceRecord = await entityLayer.createEntity('component-instances', {
+      definitionId,
+      configOverrides: {},
+      placement: { flowId: '', stageId: '', order: 0 },
+    });
+    componentInstanceIdMap.set(compTemplate.slug, instanceRecord.id as string);
+  }
+
+  // 3. Create flow definition — remap component references to instance IDs
   const remappedStages = template.flowTemplate.stages.map((stage) => ({
     ...stage,
     componentOrder: stage.componentOrder.map(
-      (slug) => componentIdMap.get(slug.replace('comp-', '')) ?? slug,
+      (slug) => componentInstanceIdMap.get(slug.replace('comp-', '')) ?? slug,
     ),
   }));
 
@@ -478,13 +493,13 @@ export async function instantiateTemplate(
     stages: remappedStages,
   };
 
-  // 3. Build pageConfig with remapped component instance IDs
+  // 4. Build pageConfig with remapped component instance IDs
   const pageConfig: PageConfig = {
     ...template.pageConfig,
     sections: template.pageConfig.sections.map((section) => ({
       ...section,
       componentInstanceIds: section.componentInstanceIds.map(
-        (slug) => componentIdMap.get(slug.replace('comp-', '')) ?? slug,
+        (slug) => componentInstanceIdMap.get(slug.replace('comp-', '')) ?? slug,
       ),
     })),
   };

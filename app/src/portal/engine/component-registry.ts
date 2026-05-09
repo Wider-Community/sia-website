@@ -8,6 +8,15 @@
 import type { EntityControlLayer } from '../lib/entity-control-layer';
 import type { ComponentDefinition, ComponentInstance } from './types';
 
+/** Safely parse a value that might be a JSON string or already an object. */
+function safeParse<T>(value: unknown, fallback: T): T {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value === 'string') {
+    try { return JSON.parse(value) as T; } catch { return fallback; }
+  }
+  return value as T;
+}
+
 export class ComponentRegistry {
   constructor(private entityLayer: EntityControlLayer) {}
 
@@ -197,12 +206,12 @@ export class ComponentRegistry {
       id: record.id as string,
       nodeType: 'TEMPLATE',
       slug: record.slug as string,
-      category: record.componentCategory as ComponentDefinition['category'],
+      category: (record.componentCategory ?? record.category ?? 'field') as ComponentDefinition['category'],
       renderer: record.renderer as string,
-      dataSchema: (record.dataSchema ?? {}) as ComponentDefinition['dataSchema'],
-      defaultConfig: (record.defaultConfig ?? {}) as Record<string, unknown>,
-      validations: (record.validations ?? []) as ComponentDefinition['validations'],
-      i18n: (record.i18n ?? {
+      dataSchema: safeParse(record.dataSchema, { type: 'string' }) as ComponentDefinition['dataSchema'],
+      defaultConfig: safeParse(record.defaultConfig, {}) as Record<string, unknown>,
+      validations: safeParse(record.validations, []) as ComponentDefinition['validations'],
+      i18n: safeParse(record.i18n, {
         en: { label: record.slug as string },
         ar: { label: record.slug as string },
       }) as ComponentDefinition['i18n'],

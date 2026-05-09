@@ -292,6 +292,7 @@ export const BUILT_IN_RENDERERS: Record<
   string,
   React.ComponentType<DynamicComponentProps>
 > = {
+  // Canonical names
   TextFieldRenderer,
   NumberFieldRenderer,
   TextAreaRenderer,
@@ -300,4 +301,23 @@ export const BUILT_IN_RENDERERS: Record<
   DatePickerRenderer,
   MultiSelectRenderer,
   FallbackRenderer,
+
+  // Aliases (used by experience templates and manual definitions)
+  'text-input': TextFieldRenderer,
+  'text': TextFieldRenderer,
+  'textarea': TextAreaRenderer,
+  'select': SelectRenderer,
+  'multi-select': MultiSelectRenderer,
+  'number': NumberFieldRenderer,
+  'number-input': NumberFieldRenderer,
+  'toggle': ToggleRenderer,
+  'switch': ToggleRenderer,
+  'date': DatePickerRenderer,
+  'date-picker': DatePickerRenderer,
+  'phone-input': TextFieldRenderer,
+  'email-input': TextFieldRenderer,
+  'url-input': TextFieldRenderer,
+  'file-upload': FallbackRenderer,
+  'range-input': NumberFieldRenderer,
+  'review-panel': FallbackRenderer,
 };
