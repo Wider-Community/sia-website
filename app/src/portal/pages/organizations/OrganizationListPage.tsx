@@ -7,7 +7,7 @@ import {
   getPaginationRowModel,
   getCoreRowModel,
 } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -28,13 +28,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowUpDown, ChevronLeft, ChevronRight, Building2 } from "lucide-react";
+import { Plus, ArrowUpDown, ChevronLeft, ChevronRight, Building2, SlidersHorizontal, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Organization } from "../../schemas";
 import { PageShell } from "../../components/PageShell";
 import { EmptyState } from "../../components/EmptyState";
 import { PageHeader } from "../../components/PageHeader";
+import { DynamicFilterPanel } from "../../engine/components/DynamicFilterPanel";
+import { deriveFilterDimensions } from "../../engine/schema-adaptive";
+import type { FilterState, JSONSchema7 } from "../../engine/types";
 
 const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
   active: "default",
@@ -42,9 +45,22 @@ const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
   inactive: "outline",
 };
 
+const orgSchema: JSONSchema7 = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', title: 'Name' },
+    type: { type: 'string', title: 'Type', enum: ['partner', 'investor', 'vendor', 'client', 'market_entity'] },
+    status: { type: 'string', title: 'Status', enum: ['active', 'inactive', 'prospect'] },
+  },
+};
+
+const orgFilterDimensions = deriveFilterDimensions(orgSchema);
+
 export function OrganizationListPage() {
   const navigate = useNavigate();
   const [globalFilter, setGlobalFilter] = useState("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<FilterState[]>([]);
 
   const columns = useMemo<ColumnDef<Organization>[]>(
     () => [
@@ -134,6 +150,22 @@ export function OrganizationListPage() {
     globalFilterFn: "includesString",
   });
 
+  // Apply advanced filter state to table columns
+  const handleAdvancedFiltersChange = useCallback(
+    (filters: FilterState[]) => {
+      setAdvancedFilters(filters);
+      // Map advanced filters to table column filters
+      for (const dim of orgFilterDimensions) {
+        const match = filters.find((f) => f.field === dim.field);
+        const col = reactTable.getColumn(dim.field);
+        if (col) {
+          col.setFilterValue(match && match.value !== "" ? match.value : undefined);
+        }
+      }
+    },
+    [reactTable],
+  );
+
   const isLoading = refineCore.tableQuery.isLoading;
 
   return (
@@ -141,14 +173,47 @@ export function OrganizationListPage() {
       <PageHeader
         title="Organizations"
         actions={
-          <AnimatedButton onClick={() => navigate("/portal/organizations/create")}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Organization
-          </AnimatedButton>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate("/portal/organizations/dynamic-create")}>
+              <Zap className="mr-2 h-4 w-4" />
+              Create (Dynamic)
+            </Button>
+            <AnimatedButton onClick={() => navigate("/portal/organizations/create")}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Organization
+            </AnimatedButton>
+          </div>
         }
       />
 
       {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          variant={showAdvancedFilters ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowAdvancedFilters((prev) => !prev)}
+        >
+          <SlidersHorizontal className="mr-2 h-4 w-4" />
+          Advanced Filters
+          {advancedFilters.length > 0 && (
+            <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary-foreground text-xs font-medium text-primary">
+              {advancedFilters.length}
+            </span>
+          )}
+        </Button>
+      </div>
+
+      {showAdvancedFilters && (
+        <div className="rounded-md border p-4">
+          <DynamicFilterPanel
+            dimensions={orgFilterDimensions}
+            values={advancedFilters}
+            onChange={handleAdvancedFiltersChange}
+            locale="en"
+          />
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <Input
           placeholder="Search organizations..."

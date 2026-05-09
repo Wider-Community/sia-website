@@ -120,6 +120,21 @@ export class FlowEngine {
     return session;
   }
 
+  async listSessions(flowId: string, filters?: {
+    status?: string;
+  }): Promise<FlowSession[]> {
+    const crudFilters: Array<{ field: string; operator: 'eq'; value: string }> = [
+      { field: 'flowId', operator: 'eq', value: flowId },
+    ];
+    if (filters?.status) {
+      crudFilters.push({ field: 'status', operator: 'eq', value: filters.status });
+    }
+    const result = await this.entityLayer.listEntities('flow-sessions', {
+      filters: crudFilters,
+    });
+    return result.data.map((r) => this.toFlowSession(r));
+  }
+
   async getSession(sessionId: string): Promise<FlowSession | null> {
     try {
       const record = await this.entityLayer.getEntity(

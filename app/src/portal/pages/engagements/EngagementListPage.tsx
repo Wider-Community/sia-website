@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowUpDown, ChevronLeft, ChevronRight, Handshake, Trash2 } from "lucide-react";
+import { Plus, ArrowUpDown, ChevronLeft, ChevronRight, Handshake, Trash2, Kanban, Sparkles } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -193,10 +193,20 @@ export function EngagementListPage() {
       <PageHeader
         title="Engagements"
         actions={
-          <AnimatedButton onClick={() => navigate("/portal/engagements/create")}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Engagement
-          </AnimatedButton>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate("/portal/engagements/pipeline")}>
+              <Kanban className="mr-2 h-4 w-4" />
+              Pipeline View
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/portal/engagements/dynamic-create")}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Create (Dynamic)
+            </Button>
+            <AnimatedButton onClick={() => navigate("/portal/engagements/create")}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Engagement
+            </AnimatedButton>
+          </div>
         }
       />
 

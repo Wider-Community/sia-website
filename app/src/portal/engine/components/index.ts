@@ -30,3 +30,9 @@ export type { SuggestionReviewPanelProps } from './SuggestionReviewPanel';
 
 export { NotificationPreferencesPanel } from './NotificationPreferencesPanel';
 export type { NotificationPreferencesPanelProps } from './NotificationPreferencesPanel';
+
+export { AdminGate } from './AdminGate';
+export type { AdminGateProps } from './AdminGate';
+
+export { AdvancedFilterWrapper } from './AdvancedFilterWrapper';
+export type { AdvancedFilterWrapperProps } from './AdvancedFilterWrapper';

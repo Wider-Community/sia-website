@@ -39,6 +39,7 @@ import {
   type FieldRect,
 } from "../../components/SignatureFieldOverlay";
 import { createBlankPdf } from "../../lib/pdf-assembly";
+import { sendEmail, buildSigningRequestEmail } from "../../lib/email";
 import {
   Select,
   SelectContent,
@@ -78,6 +79,7 @@ export function NewSigningRequestPage() {
   const [organizationId, setOrganizationId] = useState("");
   const [engagementId, setEngagementId] = useState("");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfFileName, setPdfFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,6 +120,7 @@ export function NewSigningRequestPage() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setPdfUrl(url);
+    setPdfFile(file);
     setPdfFileName(file.name);
   };
 
@@ -227,16 +230,41 @@ export function NewSigningRequestPage() {
     signers.every((s) => s.name.trim() && s.email.trim()) &&
     fields.every((f) => f.signerId);
 
+  const uploadPdfToR2 = async (file: File): Promise<string> => {
+    const userId = "user-1";
+    const params = new URLSearchParams({
+      orgId: organizationId || "signing",
+      orgName: organizationId || "signing",
+      fileName: file.name,
+      userId,
+      path: "signing-documents",
+    });
+    const resp = await fetch(`/api/upload?${params.toString()}`, {
+      method: "POST",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+    if (!resp.ok) throw new Error("PDF upload failed");
+    const { key } = (await resp.json()) as { key: string };
+    return `/api/download?key=${encodeURIComponent(key)}`;
+  };
+
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      // Upload PDF to R2 if we have a file, otherwise use the existing URL (e.g. generated sample)
+      let storedPdfUrl = pdfUrl!;
+      if (pdfFile) {
+        storedPdfUrl = await uploadPdfToR2(pdfFile);
+      }
+
       // Create the signing request
       const reqResult = await create({
         resource: "signing-requests",
         values: {
           title,
           status: "sent",
-          pdfUrl: pdfUrl!,
+          pdfUrl: storedPdfUrl,
           pdfFileName,
           message,
           createdBy: "user-1",
@@ -269,7 +297,23 @@ export function NewSigningRequestPage() {
           successNotification: false,
         });
         signerIdMap[s.tempId] = (signerResult.data as { id: string }).id;
-        links.push({ name: s.name, link: `${appUrl}/sign/${token}` });
+        const signingLink = `${appUrl}/sign/${token}`;
+        links.push({ name: s.name, link: signingLink });
+
+        // Send signing request email
+        sendEmail({
+          to: s.email,
+          subject: `Signature requested: ${title}`,
+          html: buildSigningRequestEmail({
+            signerName: s.name,
+            documentTitle: title,
+            signingLink,
+            message: message || undefined,
+          }),
+        }).catch((err) => {
+          console.error(`Failed to send email to ${s.email}:`, err);
+          toast.error(`Failed to send email to ${s.email}`);
+        });
       }
 
       // Create signature fields
@@ -290,7 +334,7 @@ export function NewSigningRequestPage() {
         });
       }
 
-      toast.success("Signing request created successfully");
+      toast.success("Signing request created and emails sent");
       setCreatedLinks(links);
       setCreatedRequestId(requestId);
     } catch (err) {

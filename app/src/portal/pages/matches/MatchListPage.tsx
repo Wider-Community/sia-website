@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowUpDown, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
+import { Plus, ArrowUpDown, ChevronLeft, ChevronRight, Link2, Zap, Columns3 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MATCH_CATEGORIES, MATCH_STATUSES, type Match } from "../../schemas";
@@ -186,10 +186,20 @@ export function MatchListPage() {
       <PageHeader
         title="Matches"
         actions={
-          <AnimatedButton onClick={() => navigate("/portal/matches/create")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Match
-          </AnimatedButton>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate("/portal/matches/flow")}>
+              <Zap className="mr-2 h-4 w-4" />
+              Match Flow
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/portal/matches/kanban")}>
+              <Columns3 className="mr-2 h-4 w-4" />
+              Kanban
+            </Button>
+            <AnimatedButton onClick={() => navigate("/portal/matches/create")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Match
+            </AnimatedButton>
+          </div>
         }
       />
 

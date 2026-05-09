@@ -1,7 +1,7 @@
 import { Refine, Authenticated } from "@refinedev/core";
 import routerProvider from "@refinedev/react-router";
 import { Outlet, Navigate } from "react-router-dom";
-import { Building2, Users, FileSignature, CheckSquare, Layers, Link2, Settings2 } from "lucide-react";
+import { Building2, Users, FileSignature, CheckSquare, Layers, Link2, Settings2, Workflow } from "lucide-react";
 import {
   mockDataProvider,
   mockAuthProvider,
@@ -13,13 +13,14 @@ import { authProvider as mujarradAuthProvider } from "./providers/auth-provider"
 import { PortalLayout } from "./layouts/PortalLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { entityLayer } from "./providers/mujarrad-data-provider";
-import { initializeEngine } from "./engine";
+import { initializeEngine, initializeNotificationBridge } from "./engine";
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
 
 // Initialize the dynamic component engine with the Mujarrad data layer
 if (!USE_MOCK) {
   initializeEngine(entityLayer);
+  initializeNotificationBridge();
 }
 
 const dataProvider = USE_MOCK ? mockDataProvider : mujarradDataProvider;
@@ -88,6 +89,11 @@ export function PortalApp() {
         },
         { name: "sla-rules", meta: { hide: true } },
         { name: "alerts", meta: { hide: true } },
+        {
+          name: "flows",
+          list: "/portal/flows",
+          meta: { label: "Flows", icon: <Workflow /> },
+        },
         {
           name: "control-board",
           list: "/portal/control-board",

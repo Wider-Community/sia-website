@@ -41,6 +41,8 @@ import {
 } from "../../components/SignatureFieldOverlay";
 import { assemblePdf, type FieldPlacement } from "../../lib/pdf-assembly";
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
+import { sendEmail, buildReminderEmail } from "../../lib/email";
 
 const statusLabel: Record<string, string> = {
   draft: "Draft",
@@ -117,6 +119,21 @@ export function SigningDetailPage() {
       onSuccess: () => {
         const link = `${appUrl}/sign/${newToken}`;
         navigator.clipboard.writeText(link);
+
+        // Send reminder email
+        sendEmail({
+          to: signer.email as string,
+          subject: `Reminder: Signature requested for "${req?.title as string}"`,
+          html: buildReminderEmail({
+            signerName: signer.name as string,
+            documentTitle: req?.title as string,
+            signingLink: link,
+          }),
+        }).then(() => {
+          toast.success(`Reminder sent to ${signer.name as string}`);
+        }).catch(() => {
+          toast.error(`Failed to send reminder to ${signer.email as string}`);
+        });
       },
     });
   };

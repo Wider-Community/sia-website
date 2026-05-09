@@ -78,4 +78,4 @@ export const mujarradDataProvider: DataProvider = {
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-export { client as mujarradClient };
+export { client as mujarradClient, entityLayer };

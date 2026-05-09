@@ -2,13 +2,14 @@
  * Lightweight upload API — receives files from the portal and stores them in R2.
  * Supports multi-tenant folder structure: {userId}/organizations/{orgId}-{slug}/files/
  *
- * Usage: npx tsx --env-file=../.env scripts/upload-server.ts
+ * Usage: npx tsx --env-file=.env scripts/upload-server.ts
  */
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, CopyObjectCommand } from "@aws-sdk/client-s3";
+import { Resend } from "resend";
 
 const PORT = Number(process.env.UPLOAD_SERVER_PORT ?? 4000);
 
@@ -22,6 +23,8 @@ const s3 = new S3Client({
 });
 
 const BUCKET = process.env.R2_BUCKET_NAME ?? "sia-data";
+
+const resend = new Resend(process.env.RESEND_API_KEY ?? "");
 
 const app = new Hono();
 
@@ -176,6 +179,41 @@ app.post("/folder", async (c) => {
   }));
 
   return c.json({ folder: key });
+});
+
+// Send email via Resend
+// POST /send-email { to, subject, html, from? }
+app.post("/send-email", async (c) => {
+  if (!process.env.RESEND_API_KEY) {
+    return c.json({ error: "RESEND_API_KEY not configured" }, 500);
+  }
+
+  const body = await c.req.json<{
+    to: string | string[];
+    subject: string;
+    html: string;
+    from?: string;
+  }>();
+
+  if (!body.to || !body.subject || !body.html) {
+    return c.json({ error: "to, subject, and html are required" }, 400);
+  }
+
+  const from = body.from ?? "SIA Platform <noreply@sia-platform.com>";
+
+  const { data, error } = await resend.emails.send({
+    from,
+    to: Array.isArray(body.to) ? body.to : [body.to],
+    subject: body.subject,
+    html: body.html,
+  });
+
+  if (error) {
+    console.error("Resend error:", error);
+    return c.json({ error: error.message }, 500);
+  }
+
+  return c.json({ id: data?.id, status: "sent" });
 });
 
 app.get("/health", (c) => c.json({ ok: true }));

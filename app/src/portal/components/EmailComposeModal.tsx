@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCreate } from "@refinedev/core";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
+import { sendEmail } from "../lib/email";
 
 interface EmailComposeModalProps {
   open: boolean;
@@ -35,11 +37,27 @@ export function EmailComposeModal({
   const [sending, setSending] = useState(false);
   const { mutate: createEvent } = useCreate();
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!to || !subject) return;
     setSending(true);
-    createEvent(
-      {
+
+    try {
+      // Send the actual email via Resend
+      await sendEmail({
+        to,
+        subject,
+        html: `<div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1C1C1E;">
+          <div style="border-bottom: 2px solid #C8A951; padding-bottom: 16px; margin-bottom: 24px;">
+            <h1 style="font-size: 24px; font-weight: 700; margin: 0;">SIA Platform</h1>
+          </div>
+          <p style="white-space: pre-wrap;">${body}</p>
+          <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
+          <p style="font-size: 12px; color: #9CA3AF;">Sent via SIA Platform</p>
+        </div>`,
+      });
+
+      // Log the activity event
+      createEvent({
         resource: "activity-events",
         values: {
           action: "email_sent",
@@ -50,20 +68,18 @@ export function EmailComposeModal({
           performedBy: "user-1",
           organizationId,
         },
-      },
-      {
-        onSuccess: () => {
-          setSending(false);
-          setTo(defaultTo);
-          setSubject("");
-          setBody("");
-          onOpenChange(false);
-        },
-        onError: () => {
-          setSending(false);
-        },
-      },
-    );
+      });
+
+      toast.success(`Email sent to ${to}`);
+      setSending(false);
+      setTo(defaultTo);
+      setSubject("");
+      setBody("");
+      onOpenChange(false);
+    } catch (err) {
+      toast.error("Failed to send email");
+      setSending(false);
+    }
   };
 
   return (

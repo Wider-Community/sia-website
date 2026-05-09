@@ -58,6 +58,7 @@ export type {
 
 // Engine initialization
 export { initializeEngine } from './hooks';
+export { initializeNotificationBridge } from './notification-bridge';
 
 // React hooks (public API for pages)
 export {

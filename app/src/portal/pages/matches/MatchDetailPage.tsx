@@ -1,12 +1,13 @@
 import { useOne, useUpdate, useCreate, useDelete, useCustomMutation } from "@refinedev/core";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,9 +28,14 @@ import {
   XCircle,
   Clock,
   ArrowRight,
+  Zap,
+  Check,
 } from "lucide-react";
 import { PageShell } from "../../components/PageShell";
 import { PageHeader } from "../../components/PageHeader";
+import { useFlowEngine } from "../../engine/hooks";
+import { getFlowEngine } from "../../engine/hooks-internal";
+import type { FlowDefinition, FlowSession, StageDefinition } from "../../engine/types";
 
 const CATEGORY_TO_ENGAGEMENT: Record<string, string> = {
   investment: "deal",
@@ -63,6 +69,170 @@ const categoryBadge = (category: string) => (
     {category.replace(/_/g, " ")}
   </Badge>
 );
+
+// ---------------------------------------------------------------------------
+// Match Flow Tab — shows flow session progress for this match
+// ---------------------------------------------------------------------------
+
+function MatchFlowTab() {
+  const navigate = useNavigate();
+  const { flows, loading: flowsLoading } = useFlowEngine({ status: "active" });
+
+  const [flow, setFlow] = useState<FlowDefinition | null>(null);
+  const [sessions, setSessions] = useState<FlowSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [flowNotFound, setFlowNotFound] = useState(false);
+
+  useEffect(() => {
+    if (flowsLoading) return;
+    const found = flows.find((f) => f.slug === "deal-matching-flow");
+    if (found) {
+      setFlow(found);
+      setFlowNotFound(false);
+    } else {
+      setFlowNotFound(true);
+      setLoading(false);
+    }
+  }, [flows, flowsLoading]);
+
+  useEffect(() => {
+    if (!flow) return;
+    setLoading(true);
+    getFlowEngine()
+      .listSessions(flow.id)
+      .then(setSessions)
+      .catch(() => setSessions([]))
+      .finally(() => setLoading(false));
+  }, [flow]);
+
+  if (flowsLoading || loading) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+          Loading flow data...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (flowNotFound) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Deal Matching flow not found. Seed the engine from the Control Board.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => navigate("/portal/control-board")}>
+            Go to Control Board
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!flow) return null;
+
+  if (sessions.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center space-y-3">
+          <p className="text-sm text-muted-foreground">No matching flow sessions yet.</p>
+          <Button size="sm" onClick={() => navigate("/portal/matches/flow")}>
+            <Zap className="mr-2 h-4 w-4" />
+            Start Match Flow
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {sessions.map((session) => {
+        const currentStage = flow.stages.find((s) => s.id === session.currentStageId);
+        const currentIndex = flow.stages.findIndex((s) => s.id === session.currentStageId);
+        const progress = flow.stages.length > 0
+          ? Math.round(((session.visitedStages.length) / flow.stages.length) * 100)
+          : 0;
+
+        return (
+          <Card
+            key={session.id}
+            className="cursor-pointer hover:shadow-md transition-all hover:border-primary/40"
+            onClick={() => navigate(`/portal/matches/flow?sessionId=${session.id}`)}
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Session {session.id.slice(0, 8)}</CardTitle>
+                <Badge
+                  variant="outline"
+                  className={
+                    session.status === "completed"
+                      ? "bg-sky-500/15 text-sky-700 border-sky-300"
+                      : session.status === "active"
+                        ? "bg-emerald-500/15 text-emerald-700 border-emerald-300"
+                        : ""
+                  }
+                >
+                  {session.status}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Stage progress */}
+              <div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span>
+                    {currentStage ? currentStage.metadata.label_en : "Unknown"} (Stage{" "}
+                    {currentIndex + 1} of {flow.stages.length})
+                  </span>
+                  <span>{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-1.5" />
+              </div>
+
+              {/* Stage list with check marks */}
+              <div className="flex gap-2 flex-wrap">
+                {flow.stages.map((stage) => {
+                  const visited = session.visitedStages.includes(stage.id);
+                  const isCurrent = stage.id === session.currentStageId;
+                  return (
+                    <div
+                      key={stage.id}
+                      className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border ${
+                        isCurrent
+                          ? "border-primary bg-primary/10 text-primary font-medium"
+                          : visited
+                            ? "border-primary/30 text-primary/70"
+                            : "border-muted text-muted-foreground"
+                      }`}
+                    >
+                      {visited && !isCurrent && <Check className="h-3 w-3" />}
+                      {stage.metadata.label_en}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Collected data summary */}
+              {Object.keys(session.collectedData).length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  Data collected for{" "}
+                  {Object.keys(session.collectedData).length} stage
+                  {Object.keys(session.collectedData).length !== 1 ? "s" : ""}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main MatchDetailPage
+// ---------------------------------------------------------------------------
 
 export function MatchDetailPage() {
   const { id } = useParams();
@@ -238,6 +408,17 @@ export function MatchDetailPage() {
           </>
         }
       />
+
+      <Tabs defaultValue="details" className="w-full">
+        <TabsList>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="match-flow">
+            <Zap className="mr-1 h-3 w-3" />
+            Match Flow
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="details" className="space-y-6 mt-4">
 
       {/* Admin Actions */}
       <Card className="mb-6">
@@ -502,6 +683,13 @@ export function MatchDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+        </TabsContent>
+
+        <TabsContent value="match-flow" className="mt-4">
+          <MatchFlowTab />
+        </TabsContent>
+      </Tabs>
     </PageShell>
   );
 }
