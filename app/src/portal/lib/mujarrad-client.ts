@@ -266,8 +266,10 @@ export class MujarradError extends Error {
   }
 }
 
+let _slugCounter = 0;
 function slugify(s: string): string {
-  return s
+  _slugCounter += 1;
+  return (s + "-" + _slugCounter)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");

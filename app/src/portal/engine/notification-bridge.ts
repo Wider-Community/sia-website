@@ -203,10 +203,42 @@ export function initializeNotificationBridge(): () => void {
   // Persists engine events as alerts in the Mujarrad 'alerts' resource
   // so they appear in the navbar NotificationCenter for admins.
 
+  // Debounce definition change alerts (they fire rapidly during edits)
+  let definitionDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  const pendingDefinitionAlerts = new Map<string, AlertInfo>();
+
+  function flushDefinitionAlerts() {
+    const entityLayer = getEntityLayer();
+    for (const [, alertInfo] of pendingDefinitionAlerts) {
+      entityLayer
+        .createEntity('alerts', {
+          type: alertInfo.type,
+          title: alertInfo.title,
+          message: alertInfo.message,
+          read: false,
+          createdAt: new Date().toISOString(),
+          entityId: alertInfo.entityId ?? '',
+          entityType: alertInfo.entityType ?? '',
+          source: 'engine',
+        })
+        .catch(() => { /* slug collision or network error — non-critical */ });
+    }
+    pendingDefinitionAlerts.clear();
+  }
+
   for (const eventType of ALERT_EVENT_TYPES) {
     const unsub = engineEventBus.subscribeToType(eventType, (event) => {
       const alertInfo = eventToAlert(event);
       if (!alertInfo) return;
+
+      // Debounce definition events to avoid flooding
+      if (eventType.startsWith('definition.')) {
+        const key = `${alertInfo.entityId}-${eventType}`;
+        pendingDefinitionAlerts.set(key, alertInfo);
+        if (definitionDebounceTimer) clearTimeout(definitionDebounceTimer);
+        definitionDebounceTimer = setTimeout(flushDefinitionAlerts, 2000);
+        return;
+      }
 
       const entityLayer = getEntityLayer();
       entityLayer
@@ -220,9 +252,7 @@ export function initializeNotificationBridge(): () => void {
           entityType: alertInfo.entityType ?? '',
           source: 'engine',
         })
-        .catch((err) => {
-          console.error('[NotificationBridge] Failed to persist alert:', err);
-        });
+        .catch(() => { /* slug collision or network error — non-critical */ });
     });
     unsubscribers.push(unsub);
   }
