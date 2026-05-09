@@ -45,6 +45,7 @@ import { AuthorizationTab } from "./AuthorizationTab";
 import { FlowDesigner } from "./FlowDesigner";
 import { NotificationManagerTab } from "./NotificationManagerTab";
 import { EnginePlayground } from "./EnginePlayground";
+import { ReferenceDataTab } from "./ReferenceDataTab";
 
 const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
   published: "default",
@@ -341,6 +342,7 @@ export function ControlBoardPage() {
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="authorization">Authorization</TabsTrigger>
           <TabsTrigger value="playground">Playground</TabsTrigger>
+          <TabsTrigger value="reference-data">Reference Data</TabsTrigger>
         </TabsList>
           <div className="flex items-center gap-2">
             <Button
@@ -471,6 +473,10 @@ export function ControlBoardPage() {
 
         <TabsContent value="playground" className="space-y-4">
           <EnginePlayground />
+        </TabsContent>
+
+        <TabsContent value="reference-data" className="space-y-4">
+          <ReferenceDataTab />
         </TabsContent>
       </Tabs>
 
