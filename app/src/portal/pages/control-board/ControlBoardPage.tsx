@@ -652,13 +652,18 @@ export function ControlBoardPage() {
                       <Label>Resource</Label>
                       <Select
                         value={form.dataSourceResource}
-                        onValueChange={(v) => updateField("dataSourceResource", v)}
+                        onValueChange={(v) => {
+                          updateField("dataSourceResource", v);
+                          const res = entityResources.find((r) => r.key === v);
+                          if (res) updateField("dataSourceDisplayField", res.titleField);
+                        }}
                       >
                         <SelectTrigger><SelectValue placeholder="Select resource..." /></SelectTrigger>
                         <SelectContent>
                           {entityResources.map((r) => (
                             <SelectItem key={r.key} value={r.key}>
-                              {r.key}
+                              <span className="capitalize">{r.key.replace(/-/g, ' ')}</span>
+                              <span className="ml-2 text-xs text-muted-foreground">({r.titleField})</span>
                             </SelectItem>
                           ))}
                         </SelectContent>

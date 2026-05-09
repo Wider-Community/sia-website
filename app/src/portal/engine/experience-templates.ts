@@ -203,7 +203,7 @@ const dealMatching: ExperienceTemplate = {
         'Organization Profile',
         'ملف المنظمة',
         false,
-        ['comp-org-summary', 'comp-deal-size', 'comp-deal-sector'],
+        ['comp-org-select', 'comp-deal-size', 'comp-deal-sector'],
         [makeTransition('t-profile-to-criteria', 'stage-org-profile', 'stage-criteria', 1)],
       ),
       makeStage(
@@ -250,7 +250,9 @@ const dealMatching: ExperienceTemplate = {
     status: 'active',
   },
   componentTemplates: [
-    makeComponentDef('org-summary', 'textarea', 'field', 'Organization Summary', 'ملخص المنظمة', { type: 'string', maxLength: 500 }, { rows: 3 }),
+    makeComponentDef('org-select', 'select', 'field', 'Organization', 'المنظمة', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Organization is required', message_ar: 'المنظمة مطلوبة' },
+    ], { type: 'entity', resource: 'organizations', displayField: 'name', valueField: 'id' }),
     makeComponentDef('deal-size', 'number-input', 'field', 'Deal Size (USD)', 'حجم الصفقة (دولار)', { type: 'number', minimum: 0 }, {}, [
       { rule: 'required', message_en: 'Deal size is required', message_ar: 'حجم الصفقة مطلوب' },
       { rule: 'min', value: 0, message_en: 'Must be positive', message_ar: 'يجب أن يكون إيجابيًا' },
@@ -277,7 +279,7 @@ const dealMatching: ExperienceTemplate = {
     title_ar: 'مطابقة الصفقات',
     layout: 'tabs',
     sections: [
-      { id: 'sec-profile', title_en: 'Organization Profile', title_ar: 'ملف المنظمة', componentInstanceIds: ['comp-org-summary', 'comp-deal-size', 'comp-deal-sector'] },
+      { id: 'sec-profile', title_en: 'Organization Profile', title_ar: 'ملف المنظمة', componentInstanceIds: ['comp-org-select', 'comp-deal-size', 'comp-deal-sector'] },
       { id: 'sec-criteria', title_en: 'Matching Criteria', title_ar: 'معايير المطابقة', componentInstanceIds: ['comp-target-sectors', 'comp-target-countries', 'comp-deal-range'], layout: 'grid-2' },
       { id: 'sec-prefs', title_en: 'Preferences', title_ar: 'التفضيلات', componentInstanceIds: ['comp-timeline', 'comp-partnership-type', 'comp-additional-notes'] },
       { id: 'sec-review', title_en: 'Review', title_ar: 'المراجعة', componentInstanceIds: ['comp-review-summary'] },
@@ -302,7 +304,7 @@ const dueDiligence: ExperienceTemplate = {
         'Document Upload',
         'رفع المستندات',
         false,
-        ['comp-company-docs', 'comp-financial-docs', 'comp-legal-docs'],
+        ['comp-dd-org-select', 'comp-company-docs', 'comp-financial-docs', 'comp-legal-docs'],
         [makeTransition('t-docs-to-compliance', 'stage-documents', 'stage-compliance', 1)],
       ),
       makeStage(
@@ -333,6 +335,9 @@ const dueDiligence: ExperienceTemplate = {
     status: 'active',
   },
   componentTemplates: [
+    makeComponentDef('dd-org-select', 'select', 'field', 'Organization', 'المنظمة', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Organization is required', message_ar: 'المنظمة مطلوبة' },
+    ], { type: 'entity', resource: 'organizations', displayField: 'name', valueField: 'id' }),
     makeComponentDef('company-docs', 'file-upload', 'field', 'Company Documents', 'مستندات الشركة', { type: 'array', items: { type: 'string', format: 'uri' } }, { accept: '.pdf,.docx', maxFiles: 5 }, [
       { rule: 'required', message_en: 'At least one document is required', message_ar: 'يجب رفع مستند واحد على الأقل' },
     ]),
@@ -356,7 +361,7 @@ const dueDiligence: ExperienceTemplate = {
     title_ar: 'العناية الواجبة',
     layout: 'two-column',
     sections: [
-      { id: 'sec-docs', title_en: 'Documents', title_ar: 'المستندات', componentInstanceIds: ['comp-company-docs', 'comp-financial-docs', 'comp-legal-docs'] },
+      { id: 'sec-docs', title_en: 'Documents', title_ar: 'المستندات', componentInstanceIds: ['comp-dd-org-select', 'comp-company-docs', 'comp-financial-docs', 'comp-legal-docs'] },
       { id: 'sec-compliance', title_en: 'Compliance', title_ar: 'الامتثال', componentInstanceIds: ['comp-kyc-status', 'comp-sanctions-check', 'comp-compliance-notes'] },
       { id: 'sec-approval', title_en: 'Approval', title_ar: 'الموافقة', componentInstanceIds: ['comp-approval-decision', 'comp-approval-notes'] },
     ],
