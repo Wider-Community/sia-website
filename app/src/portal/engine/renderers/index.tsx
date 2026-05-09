@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { DynamicComponentProps } from '../types';
+import { FileUploadRenderer } from './FileUploadRenderer';
 
 // ---------------------------------------------------------------------------
 // Shared field wrapper
@@ -300,6 +301,7 @@ export const BUILT_IN_RENDERERS: Record<
   ToggleRenderer,
   DatePickerRenderer,
   MultiSelectRenderer,
+  FileUploadRenderer,
   FallbackRenderer,
 
   // Aliases (used by experience templates and manual definitions)
@@ -317,7 +319,7 @@ export const BUILT_IN_RENDERERS: Record<
   'phone-input': TextFieldRenderer,
   'email-input': TextFieldRenderer,
   'url-input': TextFieldRenderer,
-  'file-upload': FallbackRenderer,
+  'file-upload': FileUploadRenderer,
   'range-input': NumberFieldRenderer,
   'review-panel': FallbackRenderer,
 };
