@@ -14,9 +14,15 @@ import {
 } from '../schemas';
 import { migrateZodSchema } from './field-migration';
 import { EXPERIENCE_TEMPLATES, instantiateTemplate } from './experience-templates';
-import { getRegistry, getEntityLayer, getReferenceDataManager } from './hooks-internal';
+import {
+  getRegistry,
+  getEntityLayer,
+  getReferenceDataManager,
+  getReferenceDataRefresher,
+} from './hooks-internal';
 import type { ComponentDefinition } from './types';
-import type { ReferenceEntry } from './reference-data';
+import type { ReferenceEntry, RefreshSource } from './reference-data';
+import { CURRENCY_ARABIC_LABELS } from './currency-arabic';
 
 export interface SeedResult {
   created: number;
@@ -38,6 +44,13 @@ export async function seedEngine(force = false): Promise<SeedResult> {
   const entityLayer = getEntityLayer();
 
   const result: SeedResult = { created: 0, skipped: 0, templates: 0, errors: [] };
+
+  // Always sync reference datasets first (idempotent, attaches refreshSource
+  // to existing system datasets even when the seed marker is present).
+  await syncReferenceDatasets(result);
+  try {
+    await getReferenceDataRefresher().rescheduleAll();
+  } catch { /* non-fatal */ }
 
   // ── 1. Check if already seeded ──────────────────────────────────────────
   const existing = await registry.listDefinitions();
@@ -108,22 +121,7 @@ export async function seedEngine(force = false): Promise<SeedResult> {
     }
   }
 
-  // ── 3B. Seed reference datasets ──────────────────────────────────────────
-  const refManager = getReferenceDataManager();
-  for (const ds of DEFAULT_DATASETS) {
-    try {
-      const existing = await refManager.getDataset(ds.datasetSlug);
-      if (!existing) {
-        await refManager.createDataset(ds);
-        result.created++;
-      } else {
-        result.skipped++;
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      result.errors.push(`Reference ${ds.datasetSlug}: ${msg}`);
-    }
-  }
+  // (Reference datasets are synced at the top of seedEngine via syncReferenceDatasets.)
 
   // ── 4. Create seed marker to prevent re-seeding ─────────────────────────
   try {
@@ -146,6 +144,40 @@ export async function seedEngine(force = false): Promise<SeedResult> {
   }
 
   return result;
+}
+
+/**
+ * Idempotent sync of reference datasets — runs every seed call regardless of
+ * the seed-marker so that existing installations get updated `refreshSource`
+ * configurations attached to system datasets.
+ */
+async function syncReferenceDatasets(result: SeedResult): Promise<void> {
+  const refManager = getReferenceDataManager();
+  for (const ds of DEFAULT_DATASETS) {
+    try {
+      const existing = await refManager.getDataset(ds.datasetSlug);
+      if (!existing) {
+        await refManager.createDataset(ds);
+        result.created++;
+      } else {
+        // Backfill: if the seed declares a refreshSource that the existing
+        // record lacks (or differs from), update it. Doesn't touch entries.
+        const existingSrcJson = JSON.stringify(existing.refreshSource ?? null);
+        const seedSrcJson = JSON.stringify(ds.refreshSource ?? null);
+        if (ds.refreshSource && existingSrcJson !== seedSrcJson) {
+          try {
+            await refManager.updateDataset(existing.id, {
+              refreshSource: ds.refreshSource,
+            });
+          } catch { /* non-fatal */ }
+        }
+        result.skipped++;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      result.errors.push(`Reference ${ds.datasetSlug}: ${msg}`);
+    }
+  }
 }
 
 /**
@@ -192,6 +224,7 @@ interface SystemDataset {
   name_ar: string;
   entries: ReferenceEntry[];
   isSystem: true;
+  refreshSource?: RefreshSource;
 }
 
 const DEFAULT_DATASETS: SystemDataset[] = [
@@ -219,6 +252,17 @@ const DEFAULT_DATASETS: SystemDataset[] = [
       { value: 'DE', label_en: 'Germany', label_ar: 'ألمانيا', order: 15 },
       { value: 'FR', label_en: 'France', label_ar: 'فرنسا', order: 16 },
     ],
+    refreshSource: {
+      url: 'https://restcountries.com/v3.1/all?fields=cca2,name,translations',
+      intervalMs: 7 * 24 * 60 * 60 * 1000, // weekly
+      mergeStrategy: 'enrich',
+      mapping: {
+        arrayPath: '.',
+        valueField: 'cca2',
+        labelEnField: 'name.common',
+        labelArField: 'translations.ara.common',
+      },
+    },
   },
   {
     datasetSlug: 'currencies',
@@ -236,6 +280,18 @@ const DEFAULT_DATASETS: SystemDataset[] = [
       { value: 'JPY', label_en: 'Japanese Yen (JPY)', label_ar: 'ين ياباني', order: 8 },
       { value: 'CNY', label_en: 'Chinese Yuan (CNY)', label_ar: 'يوان صيني', order: 9 },
     ],
+    refreshSource: {
+      url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json',
+      intervalMs: 30 * 24 * 60 * 60 * 1000, // monthly
+      mergeStrategy: 'enrich',
+      mapping: {
+        arrayPath: '$object',
+        valueField: '$key',
+        labelEnField: '$value',
+        valueTransform: 'upper', // jsDelivr currency-api uses lowercase ISO codes
+      },
+      staticArLabels: CURRENCY_ARABIC_LABELS,
+    },
   },
 
   // ── Industry & Business ──────────────────────────────────────────────────

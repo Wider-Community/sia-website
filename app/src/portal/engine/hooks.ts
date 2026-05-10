@@ -35,6 +35,7 @@ import {
   getNotifPrefsManager,
   getSuggestionEngine,
   getReferenceDataManager,
+  getReferenceDataRefresher,
   getEntityLayer,
 } from './hooks-internal';
 import type { ReferenceDataset } from './reference-data';
@@ -44,6 +45,9 @@ import type { AgentSuggestion, SuggestionStatus, SuggestionType } from './agenti
 
 // Re-export getAuthEngine so auth-middleware can import it directly
 export { getAuthEngine } from './hooks-internal';
+
+// Re-export refresher accessor so the control board can trigger manual refreshes.
+export { getReferenceDataRefresher } from './hooks-internal';
 
 /**
  * Initialize the engine with the entity control layer.

@@ -14,6 +14,7 @@ import { AuthorizationEngine } from './authorization';
 import { NotificationPreferencesManager } from './notification-preferences';
 import { SuggestionEngine } from './agentic-suggestions';
 import { ReferenceDataManager } from './reference-data';
+import { ReferenceDataRefresher } from './reference-data-refresher';
 import type { EntityControlLayer } from '../lib/entity-control-layer';
 
 // ---------------------------------------------------------------------------
@@ -29,6 +30,7 @@ let _authEngine: AuthorizationEngine | null = null;
 let _notifPrefsManager: NotificationPreferencesManager | null = null;
 let _suggestionEngine: SuggestionEngine | null = null;
 let _referenceDataManager: ReferenceDataManager | null = null;
+let _referenceDataRefresher: ReferenceDataRefresher | null = null;
 
 // ---------------------------------------------------------------------------
 // Initialization
@@ -45,6 +47,9 @@ export function initializeEngineInternal(entityLayer: EntityControlLayer): void 
   _notifPrefsManager = new NotificationPreferencesManager(entityLayer);
   _suggestionEngine = new SuggestionEngine(entityLayer);
   _referenceDataManager = new ReferenceDataManager(entityLayer);
+  _referenceDataRefresher = new ReferenceDataRefresher(_referenceDataManager);
+  // Fire-and-forget — start scheduling auto-refresh loops.
+  _referenceDataRefresher.start().catch(() => {});
 }
 
 // ---------------------------------------------------------------------------
@@ -89,6 +94,11 @@ export function getSuggestionEngine(): SuggestionEngine {
 export function getReferenceDataManager(): ReferenceDataManager {
   if (!_referenceDataManager) throw new Error('Engine not initialized. Call initializeEngine() in PortalApp.tsx.');
   return _referenceDataManager;
+}
+
+export function getReferenceDataRefresher(): ReferenceDataRefresher {
+  if (!_referenceDataRefresher) throw new Error('Engine not initialized. Call initializeEngine() in PortalApp.tsx.');
+  return _referenceDataRefresher;
 }
 
 export function getEntityLayer(): EntityControlLayer {

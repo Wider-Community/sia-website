@@ -120,5 +120,13 @@ export type { ExperienceTemplate, InstantiatedExperience } from './experience-te
 
 // Reference data & data source hooks
 export { ReferenceDataManager } from './reference-data';
-export type { ReferenceDataset, ReferenceEntry } from './reference-data';
+export type {
+  ReferenceDataset,
+  ReferenceEntry,
+  RefreshSource,
+  ResponseMapping,
+  RefreshStatus,
+} from './reference-data';
+export { ReferenceDataRefresher } from './reference-data-refresher';
+export { getReferenceDataRefresher } from './hooks';
 export { useReferenceData, useReferenceDatasets, useEntityResources, useDataSource } from './hooks';

@@ -69,7 +69,10 @@ export class ComponentResolver {
     // 3. If component has a data source binding, resolve options into config
     if (definition.dataSource && definition.dataSource.type !== 'none') {
       try {
-        const dsOptions = await this.resolveDataSourceOptions(definition.dataSource);
+        const dsOptions = await this.resolveDataSourceOptions(
+          definition.dataSource,
+          locale,
+        );
         if (dsOptions.length > 0) {
           finalConfig.options = dsOptions;
         }
@@ -210,12 +213,16 @@ export class ComponentResolver {
 
   private async resolveDataSourceOptions(
     binding: DataSourceBinding,
+    locale: 'en' | 'ar' = 'en',
   ): Promise<Array<{ value: string; label: string }>> {
     if (binding.type === 'reference' && binding.datasetSlug) {
       const manager = getReferenceDataManager();
       const dataset = await manager.getDataset(binding.datasetSlug);
       if (!dataset) return [];
-      return dataset.entries.map((e) => ({ value: e.value, label: e.label_en }));
+      return dataset.entries.map((e) => ({
+        value: e.value,
+        label: locale === 'ar' ? (e.label_ar ?? e.label_en) : e.label_en,
+      }));
     }
 
     if (binding.type === 'entity' && binding.resource) {

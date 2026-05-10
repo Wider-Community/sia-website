@@ -15,7 +15,61 @@ export interface ReferenceEntry {
   group?: string;
   /** Optional sort order */
   order?: number;
+  /** True if a human edited this entry — refresher leaves it alone */
+  isUserEdited?: boolean;
 }
+
+/**
+ * Maps an external API response to ReferenceEntry shape.
+ *
+ * Supports two response shapes:
+ *  - Array: arrayPath points to an array; valueField/labelEnField/etc. are
+ *    dot-paths into each item.
+ *  - Object map: arrayPath uses the synthetic token '$object' to iterate
+ *    object entries; valueField/labelEnField use '$key' / '$value' / nested
+ *    paths within the value.
+ */
+export interface ResponseMapping {
+  /** Path to the array (or object map) in the response. '.' = root. */
+  arrayPath: string;
+  /** Field on each item used as the stable value. Use '$key' for object maps. */
+  valueField: string;
+  /** Field on each item used as the EN label. Use '$value' for object maps. */
+  labelEnField: string;
+  /** Optional path to AR label. Untouched on enrich if absent. */
+  labelArField?: string;
+  /** Optional grouping field. */
+  groupField?: string;
+  /** Optional sort-order field. */
+  orderField?: string;
+  /** Normalize value casing (e.g. lowercase ISO codes → uppercase). */
+  valueTransform?: 'upper' | 'lower';
+}
+
+export interface RefreshSource {
+  /** Public URL the refresher hits. No auth in this iteration. */
+  url: string;
+  /** How often to refresh (ms). 0 = manual only (no auto-refresh). */
+  intervalMs: number;
+  /** How to interpret the response. */
+  mapping: ResponseMapping;
+  /**
+   * enrich: update existing entries' EN/group/order from API; preserve curated AR;
+   * never delete; append new entries from API.
+   * replace: drop all non-isUserEdited entries and rebuild from API.
+   */
+  mergeStrategy: 'enrich' | 'replace';
+  /** Per-request timeout in ms (default 10000). */
+  timeoutMs?: number;
+  /**
+   * Optional static Arabic-label dictionary keyed by entry value. Applied to
+   * fetched entries that lack `label_ar` (e.g. APIs returning English only).
+   * Existing curated entries are unaffected (the merge step preserves them).
+   */
+  staticArLabels?: Record<string, string>;
+}
+
+export type RefreshStatus = 'never' | 'ok' | 'error';
 
 export interface ReferenceDataset {
   id: string;
@@ -27,6 +81,14 @@ export interface ReferenceDataset {
   version: number;
   /** System datasets are seeded by default and cannot be deleted */
   isSystem?: boolean;
+  /** Optional external API source. Absent = curated only. */
+  refreshSource?: RefreshSource;
+  /** ISO timestamp of last successful refresh. */
+  lastRefreshedAt?: string;
+  /** Outcome of last refresh attempt. */
+  lastRefreshStatus?: RefreshStatus;
+  /** Error message when lastRefreshStatus === 'error'. */
+  lastRefreshError?: string;
 }
 
 // In-memory cache with TTL
@@ -121,6 +183,10 @@ export class ReferenceDataManager {
     if (typeof entries === 'string') {
       try { entries = JSON.parse(entries); } catch { entries = []; }
     }
+    let refreshSource = record.refreshSource;
+    if (typeof refreshSource === 'string') {
+      try { refreshSource = JSON.parse(refreshSource); } catch { refreshSource = undefined; }
+    }
     return {
       id: record.id as string,
       datasetSlug: record.datasetSlug as string,
@@ -130,6 +196,10 @@ export class ReferenceDataManager {
       entries: (entries ?? []) as ReferenceEntry[],
       version: (record.version as number) ?? 1,
       isSystem: (record.isSystem as boolean) ?? false,
+      refreshSource: refreshSource as RefreshSource | undefined,
+      lastRefreshedAt: record.lastRefreshedAt as string | undefined,
+      lastRefreshStatus: record.lastRefreshStatus as RefreshStatus | undefined,
+      lastRefreshError: record.lastRefreshError as string | undefined,
     };
   }
 }
