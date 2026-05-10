@@ -14,25 +14,12 @@ import type {
   ReferenceEntry,
   RefreshSource,
   ResponseMapping,
+  ArEnrichmentSource,
 } from './reference-data';
 import type { ReferenceDataManager } from './reference-data';
-import { CURRENCY_ARABIC_LABELS } from './currency-arabic';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
-
-/**
- * Per-dataset Arabic-label dictionaries baked into code.
- *
- * Used when an external API returns English-only labels and the Arabic
- * translations are stable, well-known data (e.g. ISO 4217 currency codes).
- *
- * This sits in code rather than in the persisted `refreshSource` so that
- * upgrades to the dictionary (new currencies, fixes to Arabic spelling)
- * apply immediately without requiring a re-seed of every installation.
- */
-const STATIC_AR_DICTIONARIES: Record<string, Record<string, string>> = {
-  currencies: CURRENCY_ARABIC_LABELS,
-};
+const DEFAULT_AR_ENRICHMENT_TIMEOUT_MS = 15_000;
 
 export class ReferenceDataRefresher {
   private timers = new Map<string, ReturnType<typeof setInterval>>();
@@ -161,6 +148,7 @@ async function fetchAndMap(
   src: RefreshSource,
   datasetSlug: string,
 ): Promise<ReferenceEntry[]> {
+  void datasetSlug;
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
@@ -177,21 +165,75 @@ async function fetchAndMap(
   }
   const body = await response.json();
   const entries = mapResponse(body, src.mapping);
-  // Apply Arabic-label enrichment from two sources:
-  //   1. RefreshSource.staticArLabels — admin-defined inline dictionary
-  //   2. STATIC_AR_DICTIONARIES[slug]  — dictionary baked into code by slug
-  // Both are applied; the inline source wins on conflict.
-  const codeMap = STATIC_AR_DICTIONARIES[datasetSlug];
-  if (codeMap || src.staticArLabels) {
-    for (const e of entries) {
-      if (e.label_ar) continue;
-      const fromInline = src.staticArLabels?.[e.value];
-      const fromCode = codeMap?.[e.value];
-      const ar = fromInline ?? fromCode;
-      if (ar) e.label_ar = ar;
+
+  // Optional secondary fetch: live Arabic labels from Wikidata.
+  // Tolerated if it fails — entries simply stay English-only.
+  if (src.arEnrichmentSource) {
+    try {
+      const arMap = await fetchArEnrichment(src.arEnrichmentSource);
+      for (const e of entries) {
+        if (e.label_ar) continue;
+        const ar = arMap.get(e.value);
+        if (ar) e.label_ar = ar;
+      }
+    } catch (err) {
+      // Don't fail the whole refresh; just log and continue with EN-only.
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[ReferenceDataRefresher] AR enrichment failed for ${datasetSlug}: ${msg}`,
+      );
     }
   }
+
   return entries;
+}
+
+/**
+ * Fetch Arabic labels from Wikidata's SPARQL endpoint and return as a Map
+ * keyed by entry value (e.g. ISO 4217 code → Arabic label).
+ */
+async function fetchArEnrichment(
+  src: ArEnrichmentSource,
+): Promise<Map<string, string>> {
+  if (src.type !== 'wikidata-sparql') {
+    throw new Error(`Unsupported arEnrichmentSource.type: ${src.type}`);
+  }
+
+  const url = `https://query.wikidata.org/sparql?query=${encodeURIComponent(src.query)}&format=json`;
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    src.timeoutMs ?? DEFAULT_AR_ENRICHMENT_TIMEOUT_MS,
+  );
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: 'application/sparql-results+json' },
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} from Wikidata SPARQL`);
+  }
+  const body = (await response.json()) as {
+    results?: { bindings?: Array<Record<string, { value: string }>> };
+  };
+  const bindings = body.results?.bindings ?? [];
+  const out = new Map<string, string>();
+  for (const row of bindings) {
+    const codeRaw = row[src.codeBinding]?.value;
+    const arLabel = row[src.arLabelBinding]?.value;
+    if (!codeRaw || !arLabel) continue;
+    let code = codeRaw;
+    if (src.valueTransform === 'upper') code = code.toUpperCase();
+    else if (src.valueTransform === 'lower') code = code.toLowerCase();
+    // First-write-wins: Wikidata sometimes has multiple Arabic labels per
+    // entity, often a primary + aliases. Take the first.
+    if (!out.has(code)) out.set(code, arLabel);
+  }
+  return out;
 }
 
 function mapResponse(body: unknown, mapping: ResponseMapping): ReferenceEntry[] {

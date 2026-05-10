@@ -224,36 +224,56 @@ can refine manually.
 
 ##### 6.2 `currencies`
 
-- **API:** [Frankfurter](https://www.frankfurter.app/) — free, no auth, CORS,
-  ECB-backed.
-- **Endpoint:** `https://api.frankfurter.app/currencies`
-- **Why:** Returns a flat object of `{ ISO_CODE: "Display Name" }`. Simple,
-  reliable, no rate limit.
-- **Refresh:** Monthly (currency lists change rarely; ISO 4217 updates are
-  infrequent).
+- **Primary API (English):** jsDelivr-hosted
+  [`@fawazahmed0/currency-api`](https://github.com/fawazahmed0/exchange-api) —
+  free, no auth, CORS via jsDelivr.
+- **Primary endpoint:** `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json`
+- **Why primary:** Returns a flat object of `{ "iso_code": "Display Name" }`.
+  Simple, reliable, jsDelivr's CORS is bulletproof.
+- **Secondary live source (Arabic):** Wikidata public SPARQL endpoint.
+  Every ISO 4217 currency is a Wikidata entity carrying multilingual
+  `rdfs:label` values, including Arabic.
+- **AR endpoint:** `https://query.wikidata.org/sparql` with the SPARQL
+  query embedded in the seed.
+- **Why secondary:** No bundled translation dictionary, no manual data —
+  Arabic labels come live from a public knowledge base.
+- **Refresh:** Monthly (ISO 4217 changes rarely).
 - **Strategy:** `enrich`.
 
 ```ts
 refreshSource: {
-  url: 'https://api.frankfurter.app/currencies',
+  url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json',
   intervalMs: 30 * 24 * 60 * 60 * 1000,  // monthly
   mergeStrategy: 'enrich',
   mapping: {
-    // Frankfurter returns { "USD": "United States Dollar", ... }
-    // Refresher needs an objectAsArray flag for this shape.
-    arrayPath: '$object',                 // see "Object-as-array" note below
-    valueField: '$key',                   // the object key (e.g. "USD")
-    labelEnField: '$value',               // the object value
+    arrayPath: '$object',
+    valueField: '$key',
+    labelEnField: '$value',
+    valueTransform: 'upper',  // jsDelivr uses lowercase codes; align to USD/EUR/...
+  },
+  arEnrichmentSource: {
+    type: 'wikidata-sparql',
+    query: `SELECT ?code ?arLabel WHERE {
+      ?currency wdt:P498 ?code .
+      ?currency rdfs:label ?arLabel .
+      FILTER (LANG(?arLabel) = "ar")
+    }`,
+    codeBinding: 'code',
+    arLabelBinding: 'arLabel',
+    valueTransform: 'upper',
   },
 }
 ```
 
-> **Object-as-array note:** Frankfurter returns an object map, not an array.
-> The mapping spec needs to handle this. We'll extend `ResponseMapping` with
-> two synthetic path tokens: `$object` (treat the value at the resolved path
-> as an object map; iterate entries), `$key`/`$value` (refer to entry key
-> and value within the iteration). This handles both array and map-shaped
-> APIs without forcing every consumer to write a custom adapter.
+> **Object-as-array note:** jsDelivr currency-api returns an object map, not
+> an array. The mapping spec handles this with two synthetic path tokens:
+> `$object` (treat the resolved value as an object map; iterate entries) and
+> `$key` / `$value` (refer to entry key/value during iteration). This same
+> mechanism handles array and map-shaped APIs uniformly.
+
+> **Failure handling:** If the Wikidata SPARQL request fails (timeout, rate
+> limit, downtime), the primary refresh still succeeds. Entries simply stay
+> English-only and the next refresh re-tries the AR enrichment.
 
 #### Datasets that stay curated (no refreshSource)
 

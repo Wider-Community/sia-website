@@ -22,7 +22,6 @@ import {
 } from './hooks-internal';
 import type { ComponentDefinition } from './types';
 import type { ReferenceEntry, RefreshSource } from './reference-data';
-import { CURRENCY_ARABIC_LABELS } from './currency-arabic';
 
 export interface SeedResult {
   created: number;
@@ -290,7 +289,6 @@ const DEFAULT_DATASETS: SystemDataset[] = [
         labelEnField: '$value',
         valueTransform: 'upper', // jsDelivr currency-api uses lowercase ISO codes
       },
-      staticArLabels: CURRENCY_ARABIC_LABELS,
     },
   },
 

@@ -62,12 +62,31 @@ export interface RefreshSource {
   /** Per-request timeout in ms (default 10000). */
   timeoutMs?: number;
   /**
-   * Optional static Arabic-label dictionary keyed by entry value. Applied to
-   * fetched entries that lack `label_ar` (e.g. APIs returning English only).
-   * Existing curated entries are unaffected (the merge step preserves them).
+   * Optional secondary live source for Arabic labels when the primary API
+   * returns English only. Fetched after the primary; failures are tolerated
+   * (entries simply remain English-only and the refresh still succeeds).
    */
-  staticArLabels?: Record<string, string>;
+  arEnrichmentSource?: ArEnrichmentSource;
 }
+
+/**
+ * Live source for Arabic label enrichment. Currently supports Wikidata's
+ * public SPARQL endpoint, which has bilingual labels for ISO entities
+ * (currencies, languages, country subdivisions, etc.).
+ */
+export type ArEnrichmentSource = {
+  type: 'wikidata-sparql';
+  /** SPARQL query — must select two bindings: a code and an Arabic label. */
+  query: string;
+  /** Name of the SPARQL binding holding the entry value (e.g. ISO code). */
+  codeBinding: string;
+  /** Name of the SPARQL binding holding the Arabic label. */
+  arLabelBinding: string;
+  /** Normalize fetched code casing to match primary entries. */
+  valueTransform?: 'upper' | 'lower';
+  /** Per-request timeout in ms (default 15000 — Wikidata can be slow). */
+  timeoutMs?: number;
+};
 
 export type RefreshStatus = 'never' | 'ok' | 'error';
 
