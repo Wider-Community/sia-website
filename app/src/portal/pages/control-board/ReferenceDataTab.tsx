@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  DndContext,
+  useDraggable,
+  useDroppable,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import {
   Table,
   TableBody,
@@ -28,6 +34,8 @@ import {
   Globe,
   ChevronDown,
   ChevronRight,
+  GripVertical,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getReferenceDataManager, getReferenceDataRefresher } from "../../engine/hooks-internal";
@@ -37,6 +45,8 @@ import type {
   RefreshSource,
 } from "../../engine/reference-data";
 
+type IntervalUnit = "manual" | "day" | "week" | "month" | "custom";
+
 interface DatasetFormState {
   datasetSlug: string;
   name_en: string;
@@ -45,12 +55,38 @@ interface DatasetFormState {
   entries: ReferenceEntryDraft[];
   refreshSourceEnabled: boolean;
   refreshUrl: string;
-  refreshIntervalMs: string;
+  refreshIntervalUnit: IntervalUnit;
+  refreshIntervalCount: string;
   refreshMergeStrategy: "enrich" | "replace";
   refreshArrayPath: string;
   refreshValueField: string;
   refreshLabelEnField: string;
   refreshLabelArField: string;
+}
+
+const MS_DAY = 24 * 60 * 60 * 1000;
+const MS_WEEK = 7 * MS_DAY;
+const MS_MONTH = 30 * MS_DAY;
+
+function msToIntervalForm(ms: number): {
+  unit: IntervalUnit;
+  count: string;
+} {
+  if (!Number.isFinite(ms) || ms <= 0) return { unit: "manual", count: "" };
+  if (ms % MS_MONTH === 0) return { unit: "month", count: String(ms / MS_MONTH) };
+  if (ms % MS_WEEK === 0) return { unit: "week", count: String(ms / MS_WEEK) };
+  if (ms % MS_DAY === 0) return { unit: "day", count: String(ms / MS_DAY) };
+  return { unit: "custom", count: String(ms) };
+}
+
+function intervalFormToMs(unit: IntervalUnit, count: string): number {
+  if (unit === "manual") return 0;
+  const n = Number(count);
+  if (!Number.isFinite(n) || n < 0) return NaN;
+  if (unit === "day") return n * MS_DAY;
+  if (unit === "week") return n * MS_WEEK;
+  if (unit === "month") return n * MS_MONTH;
+  return n;
 }
 
 interface ReferenceEntryDraft {
@@ -72,7 +108,8 @@ const emptyForm: DatasetFormState = {
   entries: [],
   refreshSourceEnabled: false,
   refreshUrl: "",
-  refreshIntervalMs: "",
+  refreshIntervalUnit: "manual",
+  refreshIntervalCount: "",
   refreshMergeStrategy: "enrich",
   refreshArrayPath: ".",
   refreshValueField: "",
@@ -93,6 +130,7 @@ function entryToForm(entry: ReferenceEntry): ReferenceEntryDraft {
 
 function formFromDataset(dataset: ReferenceDataset): DatasetFormState {
   const src = dataset.refreshSource;
+  const { unit, count } = msToIntervalForm(src?.intervalMs ?? 0);
   return {
     datasetSlug: dataset.datasetSlug,
     name_en: dataset.name_en,
@@ -101,7 +139,8 @@ function formFromDataset(dataset: ReferenceDataset): DatasetFormState {
     entries: dataset.entries.map(entryToForm),
     refreshSourceEnabled: !!src,
     refreshUrl: src?.url ?? "",
-    refreshIntervalMs: src ? String(src.intervalMs) : "",
+    refreshIntervalUnit: unit,
+    refreshIntervalCount: count,
     refreshMergeStrategy: src?.mergeStrategy ?? "enrich",
     refreshArrayPath: src?.mapping.arrayPath ?? ".",
     refreshValueField: src?.mapping.valueField ?? "",
@@ -148,6 +187,371 @@ function statusBadgeVariant(
   return "secondary";
 }
 
+// --------------------------------------------------------------------------
+// JSON tree + drag-and-drop for "Fetch sample"
+// --------------------------------------------------------------------------
+
+type SampleShape =
+  | { kind: "array"; count: number; sample: unknown }
+  | { kind: "object-map"; count: number; sample: unknown; sampleKey: string }
+  | { kind: "scalar"; sample: unknown };
+
+interface TreeLeaf {
+  /** Dot-path the user will drag onto a slot. */
+  path: string;
+  /** Human-readable display (e.g. "name.common"). */
+  label: string;
+  /** The actual value at this path, shown as a hint. */
+  preview: string;
+  /** True for synthetic $key/$value rows used with object-map APIs. */
+  synthetic?: boolean;
+}
+
+function detectShape(data: unknown): SampleShape {
+  if (Array.isArray(data)) {
+    return { kind: "array", count: data.length, sample: data[0] };
+  }
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    const keys = Object.keys(obj);
+    // Heuristic: treat as object-map only if every value is a primitive or a
+    // shallow object. Otherwise it's just a regular response object.
+    const looksLikeMap =
+      keys.length > 3 &&
+      keys.every((k) => {
+        const v = obj[k];
+        return v === null || typeof v !== "object" || !Array.isArray(v);
+      });
+    if (looksLikeMap) {
+      const sampleKey = keys[0];
+      return {
+        kind: "object-map",
+        count: keys.length,
+        sample: obj[sampleKey],
+        sampleKey,
+      };
+    }
+  }
+  return { kind: "scalar", sample: data };
+}
+
+function buildLeaves(sample: unknown, prefix = "", out: TreeLeaf[] = []): TreeLeaf[] {
+  if (sample === null || sample === undefined) {
+    out.push({
+      path: prefix,
+      label: prefix || "(root)",
+      preview: String(sample),
+    });
+    return out;
+  }
+  if (typeof sample !== "object") {
+    out.push({
+      path: prefix,
+      label: prefix || "(root)",
+      preview: JSON.stringify(sample),
+    });
+    return out;
+  }
+  if (Array.isArray(sample)) {
+    out.push({
+      path: prefix,
+      label: `${prefix || "(root)"} [array]`,
+      preview: `${sample.length} items`,
+    });
+    return out;
+  }
+  for (const [k, v] of Object.entries(sample as Record<string, unknown>)) {
+    const nextPath = prefix ? `${prefix}.${k}` : k;
+    buildLeaves(v, nextPath, out);
+  }
+  return out;
+}
+
+const DROP_SLOT_IDS = {
+  value: "drop-value",
+  labelEn: "drop-label-en",
+  labelAr: "drop-label-ar",
+} as const;
+
+/**
+ * Read a dot-path from a sample value. Supports `$key` / `$value` tokens for
+ * object-map samples. Returns undefined if the path doesn't exist.
+ */
+function valueAtPath(shape: SampleShape | null, path: string): unknown {
+  if (!shape || shape.kind === "scalar") return undefined;
+  if (!path) return shape.sample;
+  if (shape.kind === "object-map") {
+    if (path === "$key") return shape.sampleKey;
+    if (path === "$value") return shape.sample;
+  }
+  const parts = path.split(".");
+  let cur: unknown = shape.sample;
+  for (const part of parts) {
+    if (cur === null || cur === undefined || typeof cur !== "object") return undefined;
+    cur = (cur as Record<string, unknown>)[part];
+  }
+  return cur;
+}
+
+function previewSnippet(v: unknown): string {
+  if (v === undefined) return "(no value at this path)";
+  if (v === null) return "null";
+  if (typeof v === "string") {
+    const s = v.length > 40 ? v.slice(0, 40) + "…" : v;
+    return `"${s}"`;
+  }
+  if (typeof v === "object") return Array.isArray(v) ? `[${v.length} items]` : "{…}";
+  return String(v);
+}
+
+/**
+ * Score a path's suitability for each slot based on its name and value shape.
+ * Higher score = better fit. Negative scores disqualify.
+ */
+type SlotKind = "value" | "labelEn" | "labelAr";
+
+const VALUE_NAME_HINTS = [
+  "cca2",
+  "cca3",
+  "ccn3",
+  "iso",
+  "iso2",
+  "iso3",
+  "alpha2",
+  "alpha3",
+  "code",
+  "id",
+  "key",
+  "slug",
+  "symbol",
+];
+const EN_NAME_HINTS = [
+  "name.common",
+  "name.official",
+  "name_en",
+  "label_en",
+  "english",
+  "title",
+  "label",
+  "display",
+];
+const AR_NAME_HINTS = ["ara", "arabic", "_ar", ".ar"];
+
+function pathMatchesHint(path: string, hint: string): boolean {
+  const p = path.toLowerCase();
+  const h = hint.toLowerCase();
+  return p === h || p.endsWith("." + h) || p.includes(h);
+}
+
+function scoreForSlot(
+  leaf: TreeLeaf,
+  slot: SlotKind,
+  shape: SampleShape | null,
+): number {
+  if (!leaf.path) return -10;
+  const val = valueAtPath(shape, leaf.path);
+  // Only primitives can fill these slots.
+  if (val !== null && typeof val === "object") return -10;
+  const path = leaf.path.toLowerCase();
+
+  if (slot === "labelAr") {
+    // Must look Arabic-ish by path; otherwise disqualify.
+    const matchesAr = AR_NAME_HINTS.some((h) => pathMatchesHint(path, h));
+    if (!matchesAr) return -10;
+    if (typeof val !== "string" || val.length === 0) return -5;
+    return 10 + (val.length > 1 ? 1 : 0);
+  }
+
+  // For EN label and Value, disqualify anything that looks Arabic.
+  const looksArabic = AR_NAME_HINTS.some((h) => pathMatchesHint(path, h));
+  if (looksArabic) return -10;
+
+  if (slot === "value") {
+    // Strong signals: known code-like names, short uppercase strings.
+    let score = 0;
+    if (VALUE_NAME_HINTS.some((h) => pathMatchesHint(path, h))) score += 10;
+    if (leaf.synthetic && leaf.path === "$key") score += 12; // object-map default
+    if (typeof val === "string") {
+      if (/^[A-Z0-9_-]{2,6}$/.test(val)) score += 4; // short code shape
+      if (val.length > 40) score -= 5;
+    } else if (typeof val === "number") {
+      score += 2;
+    }
+    // Prefer shorter (root-level) paths
+    score -= path.split(".").length - 1;
+    return score;
+  }
+
+  // labelEn
+  let score = 0;
+  if (EN_NAME_HINTS.some((h) => pathMatchesHint(path, h))) score += 10;
+  if (leaf.synthetic && leaf.path === "$value") score += 6; // object-map fallback
+  if (typeof val === "string") {
+    if (val.length >= 3 && val.length <= 80) score += 3;
+    if (/^[A-Z0-9_-]{2,6}$/.test(val)) score -= 2; // looks like a code, not a name
+  }
+  score -= path.split(".").length - 1;
+  return score;
+}
+
+function suggestSlotPaths(
+  leaves: TreeLeaf[],
+  shape: SampleShape | null,
+): { value?: string; labelEn?: string; labelAr?: string } {
+  const pickBest = (slot: SlotKind): string | undefined => {
+    let best: { path: string; score: number } | null = null;
+    for (const leaf of leaves) {
+      const s = scoreForSlot(leaf, slot, shape);
+      if (s <= 0) continue;
+      if (!best || s > best.score) best = { path: leaf.path, score: s };
+    }
+    return best?.path;
+  };
+  return {
+    value: pickBest("value"),
+    labelEn: pickBest("labelEn"),
+    labelAr: pickBest("labelAr"),
+  };
+}
+
+function DraggableLeaf({
+  leaf,
+  onPick,
+}: {
+  leaf: TreeLeaf;
+  onPick: (slot: "value" | "labelEn" | "labelAr", path: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `leaf-${leaf.path || "root"}`,
+    data: { path: leaf.path },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={`group flex items-center gap-2 rounded px-2 py-1 text-xs cursor-grab active:cursor-grabbing ${
+        isDragging ? "opacity-40 bg-muted" : "hover:bg-muted/60"
+      } ${leaf.synthetic ? "border border-dashed border-amber-400/60" : ""}`}
+      title={`Drag onto a slot, or click a button to assign: ${leaf.path}`}
+    >
+      <GripVertical className="h-3 w-3 text-muted-foreground shrink-0" />
+      <code className="font-mono text-[11px] shrink-0">{leaf.label}</code>
+      <span className="text-muted-foreground truncate flex-1">
+        {leaf.preview}
+      </span>
+      <div className="hidden group-hover:flex items-center gap-1">
+        <button
+          type="button"
+          className="text-[10px] px-1 py-0.5 rounded bg-muted hover:bg-accent"
+          onClick={(e) => {
+            e.preventDefault();
+            onPick("value", leaf.path);
+          }}
+        >
+          value
+        </button>
+        <button
+          type="button"
+          className="text-[10px] px-1 py-0.5 rounded bg-muted hover:bg-accent"
+          onClick={(e) => {
+            e.preventDefault();
+            onPick("labelEn", leaf.path);
+          }}
+        >
+          EN
+        </button>
+        <button
+          type="button"
+          className="text-[10px] px-1 py-0.5 rounded bg-muted hover:bg-accent"
+          onClick={(e) => {
+            e.preventDefault();
+            onPick("labelAr", leaf.path);
+          }}
+        >
+          AR
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DropSlot({
+  slotId,
+  label,
+  description,
+  required,
+  value,
+  onChange,
+  placeholder,
+  previewValue,
+  suggested,
+  onClear,
+}: {
+  slotId: string;
+  label: string;
+  description?: string;
+  required?: boolean;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  /** Sample value at the current path, if a sample has been fetched. */
+  previewValue?: unknown;
+  /** True if the current value was auto-suggested (not user-typed/dragged). */
+  suggested?: boolean;
+  onClear?: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: slotId });
+  const showPreview = !!value.trim() && previewValue !== undefined;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <Label htmlFor={slotId} className="font-medium">
+          {label}
+          {required ? " *" : ""}
+        </Label>
+        {suggested && value.trim() && (
+          <Badge variant="outline" className="h-4 px-1 text-[10px]">
+            suggested
+          </Badge>
+        )}
+      </div>
+      {description && (
+        <p className="text-[11px] text-muted-foreground">{description}</p>
+      )}
+      <div
+        ref={setNodeRef}
+        className={`flex items-center gap-1 rounded-md border transition ${
+          isOver ? "ring-2 ring-primary border-primary" : ""
+        } ${suggested && value.trim() ? "border-dashed" : ""}`}
+      >
+        <Input
+          id={slotId}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="font-mono text-sm border-0"
+        />
+        {value.trim() && onClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="px-1 text-muted-foreground hover:text-foreground"
+            title="Clear"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      {showPreview && (
+        <p className="text-[11px] text-muted-foreground">
+          → <span className="font-mono">{previewSnippet(previewValue)}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function ReferenceDataTab() {
   const [datasets, setDatasets] = useState<ReferenceDataset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,6 +565,14 @@ export function ReferenceDataTab() {
   const [formError, setFormError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [refreshing, setRefreshing] = useState<Record<string, boolean>>({});
+  const [sampling, setSampling] = useState(false);
+  const [sampleShape, setSampleShape] = useState<SampleShape | null>(null);
+  const [sampleError, setSampleError] = useState<string | null>(null);
+  const [suggestedSlots, setSuggestedSlots] = useState<{
+    value?: boolean;
+    labelEn?: boolean;
+    labelAr?: boolean;
+  }>({});
 
   const loadDatasets = useCallback(async () => {
     setLoading(true);
@@ -179,21 +591,33 @@ export function ReferenceDataTab() {
     void loadDatasets();
   }, [loadDatasets]);
 
+  const resetSample = useCallback(() => {
+    setSampleShape(null);
+    setSampleError(null);
+    setSampling(false);
+    setSuggestedSlots({});
+  }, []);
+
   const openCreate = useCallback(() => {
     setEditingId(null);
     setForm(emptyForm);
     setFormError(null);
     setShowAdvanced(false);
+    resetSample();
     setDialogOpen(true);
-  }, []);
+  }, [resetSample]);
 
-  const openEdit = useCallback((dataset: ReferenceDataset) => {
-    setEditingId(dataset.id);
-    setForm(formFromDataset(dataset));
-    setFormError(null);
-    setShowAdvanced(!!dataset.refreshSource);
-    setDialogOpen(true);
-  }, []);
+  const openEdit = useCallback(
+    (dataset: ReferenceDataset) => {
+      setEditingId(dataset.id);
+      setForm(formFromDataset(dataset));
+      setFormError(null);
+      setShowAdvanced(!!dataset.refreshSource);
+      resetSample();
+      setDialogOpen(true);
+    },
+    [resetSample],
+  );
 
   const openDelete = useCallback((id: string) => {
     setDeletingId(id);
@@ -231,6 +655,160 @@ export function ReferenceDataTab() {
       entries: prev.entries.filter((_, i) => i !== index),
     }));
   }, []);
+
+  const handleFetchSample = useCallback(async () => {
+    const url = form.refreshUrl.trim();
+    if (!url) {
+      setSampleError("Enter an API URL first.");
+      return;
+    }
+    setSampling(true);
+    setSampleError(null);
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      let data: unknown;
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        }
+        data = await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
+      const shape = detectShape(data);
+      setSampleShape(shape);
+
+      // Build leaves from this shape so we can suggest paths.
+      const leaves: TreeLeaf[] = [];
+      if (shape.kind === "array") {
+        buildLeaves(shape.sample, "", leaves);
+      } else if (shape.kind === "object-map") {
+        leaves.push({
+          path: "$key",
+          label: "$key",
+          preview: `the key (e.g. "${shape.sampleKey}")`,
+          synthetic: true,
+        });
+        leaves.push({
+          path: "$value",
+          label: "$value",
+          preview:
+            typeof shape.sample === "object"
+              ? "the value object"
+              : JSON.stringify(shape.sample),
+          synthetic: true,
+        });
+        if (shape.sample && typeof shape.sample === "object") {
+          buildLeaves(shape.sample, "", leaves);
+        }
+      }
+
+      const suggestions = suggestSlotPaths(leaves, shape);
+
+      setForm((prev) => {
+        const next = { ...prev };
+        if (shape.kind === "array") {
+          next.refreshArrayPath = ".";
+        } else if (shape.kind === "object-map") {
+          next.refreshArrayPath = "$object";
+        }
+        const filled: { value?: boolean; labelEn?: boolean; labelAr?: boolean } = {};
+        if (!prev.refreshValueField.trim() && suggestions.value) {
+          next.refreshValueField = suggestions.value;
+          filled.value = true;
+        }
+        if (!prev.refreshLabelEnField.trim() && suggestions.labelEn) {
+          next.refreshLabelEnField = suggestions.labelEn;
+          filled.labelEn = true;
+        }
+        if (!prev.refreshLabelArField.trim() && suggestions.labelAr) {
+          next.refreshLabelArField = suggestions.labelAr;
+          filled.labelAr = true;
+        }
+        setSuggestedSlots(filled);
+        return next;
+      });
+    } catch (err) {
+      setSampleError(err instanceof Error ? err.message : "Fetch failed.");
+      setSampleShape(null);
+    } finally {
+      setSampling(false);
+    }
+  }, [form.refreshUrl]);
+
+  const handlePickField = useCallback(
+    (slot: "value" | "labelEn" | "labelAr", path: string) => {
+      setForm((prev) => {
+        if (slot === "value") return { ...prev, refreshValueField: path };
+        if (slot === "labelEn") return { ...prev, refreshLabelEnField: path };
+        return { ...prev, refreshLabelArField: path };
+      });
+      setSuggestedSlots((prev) => ({ ...prev, [slot]: false }));
+    },
+    [],
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      if (!event.over) return;
+      const path = (event.active.data.current as { path?: string } | undefined)?.path;
+      if (path === undefined) return;
+      const target = String(event.over.id);
+      if (target === DROP_SLOT_IDS.value) handlePickField("value", path);
+      else if (target === DROP_SLOT_IDS.labelEn) handlePickField("labelEn", path);
+      else if (target === DROP_SLOT_IDS.labelAr) handlePickField("labelAr", path);
+    },
+    [handlePickField],
+  );
+
+  const sampleLeaves = useMemo<TreeLeaf[]>(() => {
+    if (!sampleShape) return [];
+    if (sampleShape.kind === "scalar") return [];
+    if (sampleShape.kind === "array") {
+      return buildLeaves(sampleShape.sample);
+    }
+    // object-map: surface $key + $value as draggable synthetic rows, and
+    // recurse into the sample value (if it's an object) for nested fields.
+    const synthetic: TreeLeaf[] = [
+      {
+        path: "$key",
+        label: "$key",
+        preview: `the key (e.g. "${sampleShape.sampleKey}")`,
+        synthetic: true,
+      },
+      {
+        path: "$value",
+        label: "$value",
+        preview:
+          typeof sampleShape.sample === "object"
+            ? "the value object"
+            : JSON.stringify(sampleShape.sample),
+        synthetic: true,
+      },
+    ];
+    const nested =
+      sampleShape.sample && typeof sampleShape.sample === "object"
+        ? buildLeaves(sampleShape.sample)
+        : [];
+    return [...synthetic, ...nested];
+  }, [sampleShape]);
+
+  const sampleBanner = useMemo(() => {
+    if (!sampleShape) return null;
+    if (sampleShape.kind === "array") {
+      return `Found a list of ${sampleShape.count} item${
+        sampleShape.count === 1 ? "" : "s"
+      }. Drag a field below onto a slot.`;
+    }
+    if (sampleShape.kind === "object-map") {
+      return `Found a lookup table with ${sampleShape.count} key${
+        sampleShape.count === 1 ? "" : "s"
+      }. Drag $key onto Value, and $value (or a nested field) onto a label.`;
+    }
+    return "Response is a single value — this API isn't a list.";
+  }, [sampleShape]);
 
   const handleManualRefresh = useCallback(
     async (slug: string) => {
@@ -291,10 +869,16 @@ export function ReferenceDataTab() {
         setFormError("EN label field is required when refresh source is enabled.");
         return;
       }
-      const intervalRaw = form.refreshIntervalMs.trim();
-      const interval = intervalRaw === "" ? 0 : Number(intervalRaw);
+      const interval = intervalFormToMs(
+        form.refreshIntervalUnit,
+        form.refreshIntervalCount.trim(),
+      );
       if (!Number.isFinite(interval) || interval < 0) {
-        setFormError("Interval (ms) must be a non-negative number.");
+        setFormError("Refresh interval must be a non-negative number.");
+        return;
+      }
+      if (form.refreshIntervalUnit !== "manual" && form.refreshIntervalCount.trim() === "") {
+        setFormError("Enter a value for the refresh interval, or choose Manual only.");
         return;
       }
       refreshSource = {
@@ -679,30 +1263,75 @@ export function ReferenceDataTab() {
                     </Label>
                   </div>
                   {form.refreshSourceEnabled && (
-                    <>
+                    <DndContext onDragEnd={handleDragEnd}>
                       <div className="space-y-2">
                         <Label htmlFor="src-url">API URL *</Label>
-                        <Input
-                          id="src-url"
-                          value={form.refreshUrl}
-                          onChange={(e) => updateField("refreshUrl", e.target.value)}
-                          placeholder="https://api.example.com/data"
-                          className="font-mono text-sm"
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            id="src-url"
+                            value={form.refreshUrl}
+                            onChange={(e) => updateField("refreshUrl", e.target.value)}
+                            placeholder="https://api.example.com/data"
+                            className="font-mono text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleFetchSample}
+                            disabled={sampling || !form.refreshUrl.trim()}
+                            title="Call the API once and let you map fields by dragging"
+                          >
+                            <Sparkles className={`h-4 w-4 ${sampling ? "animate-pulse" : ""}`} />
+                            <span className="ml-1">{sampling ? "Fetching..." : "Fetch sample"}</span>
+                          </Button>
+                        </div>
+                        {sampleError && (
+                          <p className="text-xs text-destructive">{sampleError}</p>
+                        )}
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="src-interval">Interval (ms)</Label>
-                          <Input
-                            id="src-interval"
-                            value={form.refreshIntervalMs}
-                            onChange={(e) =>
-                              updateField("refreshIntervalMs", e.target.value)
-                            }
-                            placeholder="0 = manual only"
-                            type="number"
-                            className="text-sm"
-                          />
+                          <Label>Repeats on</Label>
+                          <div className="flex gap-2">
+                            {form.refreshIntervalUnit !== "manual" && (
+                              <Input
+                                id="src-interval-count"
+                                value={form.refreshIntervalCount}
+                                onChange={(e) =>
+                                  updateField(
+                                    "refreshIntervalCount",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder={
+                                  form.refreshIntervalUnit === "custom"
+                                    ? "milliseconds"
+                                    : "1"
+                                }
+                                type="number"
+                                min="0"
+                                className="text-sm w-28"
+                              />
+                            )}
+                            <select
+                              id="src-interval-unit"
+                              value={form.refreshIntervalUnit}
+                              onChange={(e) =>
+                                updateField(
+                                  "refreshIntervalUnit",
+                                  e.target.value as IntervalUnit,
+                                )
+                              }
+                              className="h-9 flex-1 rounded-md border bg-background px-3 text-sm"
+                            >
+                              <option value="manual">Manual only</option>
+                              <option value="day">Day(s)</option>
+                              <option value="week">Week(s)</option>
+                              <option value="month">Month(s)</option>
+                              <option value="custom">Custom (ms)</option>
+                            </select>
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="src-strategy">Merge Strategy</Label>
@@ -722,62 +1351,100 @@ export function ReferenceDataTab() {
                           </select>
                         </div>
                       </div>
+                      {sampleBanner && (
+                        <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs">
+                          {sampleBanner}
+                        </div>
+                      )}
+                      {sampleLeaves.length > 0 && (
+                        <div className="rounded-md border">
+                          <div className="border-b px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                            Sample fields — drag onto a slot below
+                          </div>
+                          <div className="max-h-56 overflow-y-auto p-1 space-y-0.5">
+                            {sampleLeaves.map((leaf) => (
+                              <DraggableLeaf
+                                key={leaf.path || "(root)"}
+                                leaf={leaf}
+                                onPick={handlePickField}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="src-array-path">Array Path</Label>
+                        <DropSlot
+                          slotId={DROP_SLOT_IDS.value}
+                          label="Stable code"
+                          description='Unique ID per entry — short, never changes (e.g. "SA", "USD").'
+                          required
+                          value={form.refreshValueField}
+                          onChange={(v) => {
+                            updateField("refreshValueField", v);
+                            setSuggestedSlots((prev) => ({ ...prev, value: false }));
+                          }}
+                          onClear={() => {
+                            updateField("refreshValueField", "");
+                            setSuggestedSlots((prev) => ({ ...prev, value: false }));
+                          }}
+                          placeholder="Drag a field, or type a path"
+                          previewValue={valueAtPath(sampleShape, form.refreshValueField.trim())}
+                          suggested={suggestedSlots.value}
+                        />
+                        <DropSlot
+                          slotId={DROP_SLOT_IDS.labelEn}
+                          label="English name"
+                          description='Shown in the dropdown in English (e.g. "Saudi Arabia").'
+                          required
+                          value={form.refreshLabelEnField}
+                          onChange={(v) => {
+                            updateField("refreshLabelEnField", v);
+                            setSuggestedSlots((prev) => ({ ...prev, labelEn: false }));
+                          }}
+                          onClear={() => {
+                            updateField("refreshLabelEnField", "");
+                            setSuggestedSlots((prev) => ({ ...prev, labelEn: false }));
+                          }}
+                          placeholder="Drag a field, or type a path"
+                          previewValue={valueAtPath(sampleShape, form.refreshLabelEnField.trim())}
+                          suggested={suggestedSlots.labelEn}
+                        />
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <DropSlot
+                          slotId={DROP_SLOT_IDS.labelAr}
+                          label="Arabic name"
+                          description='Shown in the dropdown in Arabic (e.g. "العربية السعودية"). Optional.'
+                          value={form.refreshLabelArField}
+                          onChange={(v) => {
+                            updateField("refreshLabelArField", v);
+                            setSuggestedSlots((prev) => ({ ...prev, labelAr: false }));
+                          }}
+                          onClear={() => {
+                            updateField("refreshLabelArField", "");
+                            setSuggestedSlots((prev) => ({ ...prev, labelAr: false }));
+                          }}
+                          placeholder="Drag a field, or leave empty"
+                          previewValue={valueAtPath(sampleShape, form.refreshLabelArField.trim())}
+                          suggested={suggestedSlots.labelAr}
+                        />
+                        <div className="space-y-1">
+                          <Label htmlFor="src-array-path" className="font-medium">Array Path</Label>
+                          <p className="text-[11px] text-muted-foreground">
+                            Advanced — leave as-is unless the list lives inside a nested key.
+                          </p>
                           <Input
                             id="src-array-path"
                             value={form.refreshArrayPath}
                             onChange={(e) =>
                               updateField("refreshArrayPath", e.target.value)
                             }
-                            placeholder=". or $object or path.to.array"
-                            className="font-mono text-sm"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="src-value-field">Value Field *</Label>
-                          <Input
-                            id="src-value-field"
-                            value={form.refreshValueField}
-                            onChange={(e) =>
-                              updateField("refreshValueField", e.target.value)
-                            }
-                            placeholder="cca2 or $key"
+                            placeholder="Auto-filled after Fetch sample"
                             className="font-mono text-sm"
                           />
                         </div>
                       </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="src-label-en">EN Label Field *</Label>
-                          <Input
-                            id="src-label-en"
-                            value={form.refreshLabelEnField}
-                            onChange={(e) =>
-                              updateField("refreshLabelEnField", e.target.value)
-                            }
-                            placeholder="name.common or $value"
-                            className="font-mono text-sm"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="src-label-ar">AR Label Field</Label>
-                          <Input
-                            id="src-label-ar"
-                            value={form.refreshLabelArField}
-                            onChange={(e) =>
-                              updateField("refreshLabelArField", e.target.value)
-                            }
-                            placeholder="translations.ara.common"
-                            className="font-mono text-sm"
-                          />
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Use <code>$object</code>, <code>$key</code>, <code>$value</code> when the API returns an object map instead of an array.
-                      </p>
-                    </>
+                    </DndContext>
                   )}
                 </div>
               )}
