@@ -337,10 +337,7 @@ export function FlowRunnerPage() {
   // Current stage
   const currentStage = useMemo(() => {
     if (!flow || !session) return null;
-    const stage = flow.stages.find((s) => s.id === session.currentStageId) ?? null;
-    console.log('[FlowRunner] Current stage:', stage?.slug, 'componentOrder:', stage?.componentOrder);
-    console.log('[FlowRunner] All stages:', flow.stages.map(s => ({ slug: s.slug, id: s.id, componentOrder: s.componentOrder })));
-    return stage;
+    return flow.stages.find((s) => s.id === session.currentStageId) ?? null;
   }, [flow, session]);
 
   // Check if current stage is terminal

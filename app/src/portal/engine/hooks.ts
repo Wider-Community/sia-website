@@ -153,10 +153,7 @@ export function useFlowStage(
   const idsKey = componentInstanceIds.join(',');
 
   useEffect(() => {
-    console.log('[useFlowStage] IDs received:', idsRef.current);
-
     if (!idsRef.current.length) {
-      console.warn('[useFlowStage] Empty componentOrder — no IDs to resolve');
       setComponents([]);
       return;
     }
@@ -169,7 +166,6 @@ export function useFlowStage(
       .resolveMany(idsRef.current, locale)
       .then((results) => {
         if (!cancelled) {
-          console.log('[useFlowStage] Resolved', results.length, 'components from', idsRef.current.length, 'IDs');
           setComponents(results);
           setLoading(false);
         }

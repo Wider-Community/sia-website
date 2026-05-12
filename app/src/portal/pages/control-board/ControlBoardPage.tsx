@@ -37,7 +37,7 @@ import { Plus, Pencil, Trash2, Sprout } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "../../components/PageShell";
 import { PageHeader } from "../../components/PageHeader";
-import { seedEngine, clearEngine } from "../../engine/seed";
+import { seedEngine, clearEngine, clearAllData } from "../../engine/seed";
 import { useComponentRegistry, useReferenceDatasets, useEntityResources } from "../../engine/hooks";
 import type { ComponentCategory, ComponentDefinition } from "../../engine/types";
 import type { DataSourceBinding } from "../../engine/types";
@@ -195,6 +195,26 @@ export function ControlBoardPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Clear failed.");
       console.error("clearEngine() failed:", err);
+      setSeeding(false);
+    }
+  }, []);
+
+  const handleClearAllData = useCallback(async () => {
+    const confirmation = window.prompt(
+      "This will permanently delete ALL data in the Mujarrad space — organizations, contacts, engagements, matches, tasks, signing requests, files, engine data, everything.\n\nType DELETE to confirm:",
+    );
+    if (confirmation !== "DELETE") {
+      if (confirmation !== null) toast.info("Cancelled — you must type DELETE exactly.");
+      return;
+    }
+    setSeeding(true);
+    try {
+      const result = await clearAllData();
+      toast.success(`Permanently deleted ${result.deleted} record(s) across all resources.`);
+      if (result.errors.length > 0) console.warn("Clear all errors:", result.errors);
+      window.location.reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Clear all failed.");
       setSeeding(false);
     }
   }, []);
@@ -368,7 +388,15 @@ export function ControlBoardPage() {
               disabled={seeding}
               className="text-destructive hover:text-destructive"
             >
-              {seeding ? "..." : "Clear All"}
+              {seeding ? "..." : "Clear Engine"}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleClearAllData}
+              disabled={seeding}
+            >
+              {seeding ? "..." : "Delete All Data"}
             </Button>
           </div>
         </div>

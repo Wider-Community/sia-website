@@ -217,6 +217,38 @@ export async function clearEngine(): Promise<{ deleted: number; errors: string[]
   return { deleted, errors };
 }
 
+/**
+ * Delete ALL data in the Mujarrad space — every record in every registered resource.
+ * This is a nuclear reset for development/staging cleanup.
+ */
+export async function clearAllData(): Promise<{ deleted: number; errors: string[] }> {
+  const entityLayer = getEntityLayer();
+  let deleted = 0;
+  const errors: string[] = [];
+
+  // Import entity registry to get ALL resource keys
+  const { ENTITY_REGISTRY } = await import('../lib/entity-registry');
+  const allResources = Object.keys(ENTITY_REGISTRY);
+
+  for (const resource of allResources) {
+    try {
+      const { data } = await entityLayer.listEntities(resource);
+      for (const record of data) {
+        try {
+          await entityLayer.deleteEntity(resource, record.id as string);
+          deleted++;
+        } catch (err) {
+          errors.push(`${resource}/${record.id}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    } catch {
+      // Resource may have no records or not exist — skip silently
+    }
+  }
+
+  return { deleted, errors };
+}
+
 interface SystemDataset {
   datasetSlug: string;
   name_en: string;

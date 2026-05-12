@@ -81,8 +81,6 @@ export class ComponentResolver {
       }
     }
 
-    console.log(`[Resolver] ${definition.slug}: renderer="${definition.renderer}", config keys=${Object.keys(finalConfig).join(',')}, i18n.label="${i18n.label}"`);
-
     return {
       Component,
       config: finalConfig,
