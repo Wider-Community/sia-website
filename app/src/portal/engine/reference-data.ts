@@ -17,6 +17,30 @@ export interface ReferenceEntry {
   order?: number;
   /** True if a human edited this entry — refresher leaves it alone */
   isUserEdited?: boolean;
+  /**
+   * Optional per-entry extras (e.g. dialCode, currencySymbol, fxRate).
+   * Populated by mapping.extraFields when refreshing from an API.
+   */
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Maps an API response path or template expression to a per-entry extra field.
+ * Either path or template must be set.
+ *
+ * Path examples:
+ *   - "idd.root"          -> read a single value
+ *   - "idd.suffixes.0"    -> read an array element by numeric index
+ *
+ * Template examples:
+ *   - "${idd.root}${idd.suffixes.0}"   -> compose "+966" from REST Countries
+ *   - "${currency.symbol} ${name}"     -> compose "$ US Dollar"
+ */
+export interface ExtraFieldMapping {
+  /** Dot-path into each item. Mutually exclusive with template. */
+  path?: string;
+  /** Template with ${path} placeholders. Mutually exclusive with path. */
+  template?: string;
 }
 
 /**
@@ -44,6 +68,11 @@ export interface ResponseMapping {
   orderField?: string;
   /** Normalize value casing (e.g. lowercase ISO codes → uppercase). */
   valueTransform?: 'upper' | 'lower';
+  /**
+   * Optional per-entry extras populated into ReferenceEntry.data.
+   * Keyed by the property name on `data` (e.g. "dialCode").
+   */
+  extraFields?: Record<string, ExtraFieldMapping>;
 }
 
 export interface RefreshSource {
@@ -90,6 +119,20 @@ export type ArEnrichmentSource = {
 
 export type RefreshStatus = 'never' | 'ok' | 'error';
 
+/** One entry in the per-dataset refresh history log. */
+export interface RefreshHistoryEntry {
+  /** ISO timestamp of the attempt. */
+  at: string;
+  status: 'ok' | 'error';
+  /** Error message when status === 'error'. */
+  error?: string;
+  /** Number of entries after merge (null when refresh failed). */
+  entryCount?: number;
+}
+
+/** Maximum number of refresh-history entries kept per dataset. */
+export const REFRESH_HISTORY_LIMIT = 10;
+
 export interface ReferenceDataset {
   id: string;
   datasetSlug: string;
@@ -108,6 +151,8 @@ export interface ReferenceDataset {
   lastRefreshStatus?: RefreshStatus;
   /** Error message when lastRefreshStatus === 'error'. */
   lastRefreshError?: string;
+  /** Rolling log of recent refresh attempts (newest first, capped). */
+  refreshHistory?: RefreshHistoryEntry[];
 }
 
 // In-memory cache with TTL
@@ -206,6 +251,10 @@ export class ReferenceDataManager {
     if (typeof refreshSource === 'string') {
       try { refreshSource = JSON.parse(refreshSource); } catch { refreshSource = undefined; }
     }
+    let refreshHistory = record.refreshHistory;
+    if (typeof refreshHistory === 'string') {
+      try { refreshHistory = JSON.parse(refreshHistory); } catch { refreshHistory = []; }
+    }
     return {
       id: record.id as string,
       datasetSlug: record.datasetSlug as string,
@@ -219,6 +268,7 @@ export class ReferenceDataManager {
       lastRefreshedAt: record.lastRefreshedAt as string | undefined,
       lastRefreshStatus: record.lastRefreshStatus as RefreshStatus | undefined,
       lastRefreshError: record.lastRefreshError as string | undefined,
+      refreshHistory: (refreshHistory as RefreshHistoryEntry[] | undefined) ?? [],
     };
   }
 }

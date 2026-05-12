@@ -258,6 +258,22 @@ interface SystemDataset {
   refreshSource?: RefreshSource;
 }
 
+/**
+ * Wikidata SPARQL query returning ISO 3166-2 first-level subdivisions for
+ * Saudi Arabia and Malaysia, with English + Arabic labels and a country code.
+ *
+ * P300 = ISO 3166-2 code property. Returns one row per subdivision.
+ */
+const REGIONS_SPARQL = `SELECT ?code ?labelEn ?labelAr ?country WHERE {
+  ?item wdt:P300 ?code .
+  FILTER(STRSTARTS(?code, "SA-") || STRSTARTS(?code, "MY-"))
+  BIND(IF(STRSTARTS(?code, "SA-"), "SA", "MY") AS ?country)
+  OPTIONAL { ?item rdfs:label ?labelEn FILTER(LANG(?labelEn) = "en") }
+  OPTIONAL { ?item rdfs:label ?labelAr FILTER(LANG(?labelAr) = "ar") }
+}`;
+
+const REGIONS_URL = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(REGIONS_SPARQL)}`;
+
 const DEFAULT_DATASETS: SystemDataset[] = [
   // ── Geographic & Financial ───────────────────────────────────────────────
   {
@@ -284,7 +300,7 @@ const DEFAULT_DATASETS: SystemDataset[] = [
       { value: 'FR', label_en: 'France', label_ar: 'فرنسا', order: 16 },
     ],
     refreshSource: {
-      url: 'https://restcountries.com/v3.1/all?fields=cca2,name,translations',
+      url: 'https://restcountries.com/v3.1/all?fields=cca2,name,translations,idd',
       intervalMs: 7 * 24 * 60 * 60 * 1000, // weekly
       mergeStrategy: 'enrich',
       mapping: {
@@ -292,6 +308,11 @@ const DEFAULT_DATASETS: SystemDataset[] = [
         valueField: 'cca2',
         labelEnField: 'name.common',
         labelArField: 'translations.ara.common',
+        // Compose E.164 prefix from idd.root + first suffix.
+        // E.g. Saudi Arabia: { root: "+9", suffixes: ["66"] } -> "+966".
+        extraFields: {
+          dialCode: { template: '${idd.root}${idd.suffixes.0}' },
+        },
       },
     },
   },
@@ -320,6 +341,96 @@ const DEFAULT_DATASETS: SystemDataset[] = [
         valueField: '$key',
         labelEnField: '$value',
         valueTransform: 'upper', // jsDelivr currency-api uses lowercase ISO codes
+      },
+    },
+  },
+
+  {
+    datasetSlug: 'fx-rates',
+    name_en: 'FX Rates (USD base)',
+    name_ar: 'أسعار الصرف (مقابل الدولار الأمريكي)',
+    isSystem: true,
+    // Each entry: value = ISO 4217 quote currency; label_en = rate as string;
+    // data.rate = numeric multiplier so that 1 USD = data.rate × quote currency.
+    // Refreshed daily from jsDelivr's currency-api (same CDN as `currencies`).
+    entries: [
+      { value: 'SAR', label_en: '3.75', data: { rate: 3.75 }, order: 1 },
+      { value: 'MYR', label_en: '4.70', data: { rate: 4.70 }, order: 2 },
+      { value: 'AED', label_en: '3.67', data: { rate: 3.67 }, order: 3 },
+      { value: 'EUR', label_en: '0.92', data: { rate: 0.92 }, order: 4 },
+      { value: 'GBP', label_en: '0.78', data: { rate: 0.78 }, order: 5 },
+      { value: 'SGD', label_en: '1.34', data: { rate: 1.34 }, order: 6 },
+      { value: 'JPY', label_en: '149.0', data: { rate: 149.0 }, order: 7 },
+      { value: 'CNY', label_en: '7.24', data: { rate: 7.24 }, order: 8 },
+    ],
+    refreshSource: {
+      url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json',
+      intervalMs: 24 * 60 * 60 * 1000, // daily
+      mergeStrategy: 'enrich',
+      mapping: {
+        // Response shape: { date, usd: { sar: 3.75, myr: 4.70, ... } }
+        // arrayPath dives into the inner object map.
+        arrayPath: 'usd',
+        valueField: '$key',
+        valueTransform: 'upper',
+        labelEnField: '$value',
+        extraFields: {
+          rate: { path: '$value' },
+        },
+      },
+    },
+  },
+  {
+    datasetSlug: 'regions',
+    name_en: 'Regions',
+    name_ar: 'المناطق',
+    isSystem: true,
+    // Value = ISO 3166-2 code (e.g. "SA-01"). Group = country code so a form
+    // can filter the region dropdown by the selected country.
+    entries: [
+      // Saudi Arabia — 13 administrative regions (ISO 3166-2:SA)
+      { value: 'SA-01', label_en: 'Riyadh', label_ar: 'منطقة الرياض', group: 'SA', order: 1 },
+      { value: 'SA-02', label_en: 'Makkah', label_ar: 'منطقة مكة المكرمة', group: 'SA', order: 2 },
+      { value: 'SA-03', label_en: 'Madinah', label_ar: 'منطقة المدينة المنورة', group: 'SA', order: 3 },
+      { value: 'SA-04', label_en: 'Eastern Province', label_ar: 'المنطقة الشرقية', group: 'SA', order: 4 },
+      { value: 'SA-05', label_en: 'Qassim', label_ar: 'منطقة القصيم', group: 'SA', order: 5 },
+      { value: 'SA-06', label_en: 'Hail', label_ar: 'منطقة حائل', group: 'SA', order: 6 },
+      { value: 'SA-07', label_en: 'Tabuk', label_ar: 'منطقة تبوك', group: 'SA', order: 7 },
+      { value: 'SA-08', label_en: 'Northern Borders', label_ar: 'منطقة الحدود الشمالية', group: 'SA', order: 8 },
+      { value: 'SA-09', label_en: 'Jazan', label_ar: 'منطقة جازان', group: 'SA', order: 9 },
+      { value: 'SA-10', label_en: 'Najran', label_ar: 'منطقة نجران', group: 'SA', order: 10 },
+      { value: 'SA-11', label_en: 'Al-Bahah', label_ar: 'منطقة الباحة', group: 'SA', order: 11 },
+      { value: 'SA-12', label_en: 'Al-Jouf', label_ar: 'منطقة الجوف', group: 'SA', order: 12 },
+      { value: 'SA-14', label_en: 'Asir', label_ar: 'منطقة عسير', group: 'SA', order: 13 },
+      // Malaysia — 13 states + 3 federal territories (ISO 3166-2:MY)
+      { value: 'MY-01', label_en: 'Johor', label_ar: 'جوهور', group: 'MY', order: 1 },
+      { value: 'MY-02', label_en: 'Kedah', label_ar: 'قدح', group: 'MY', order: 2 },
+      { value: 'MY-03', label_en: 'Kelantan', label_ar: 'كلنتان', group: 'MY', order: 3 },
+      { value: 'MY-04', label_en: 'Melaka', label_ar: 'ملقا', group: 'MY', order: 4 },
+      { value: 'MY-05', label_en: 'Negeri Sembilan', label_ar: 'نيجري سمبيلان', group: 'MY', order: 5 },
+      { value: 'MY-06', label_en: 'Pahang', label_ar: 'باهانج', group: 'MY', order: 6 },
+      { value: 'MY-07', label_en: 'Penang', label_ar: 'بينانج', group: 'MY', order: 7 },
+      { value: 'MY-08', label_en: 'Perak', label_ar: 'بيراك', group: 'MY', order: 8 },
+      { value: 'MY-09', label_en: 'Perlis', label_ar: 'بيرليس', group: 'MY', order: 9 },
+      { value: 'MY-10', label_en: 'Selangor', label_ar: 'سلانجور', group: 'MY', order: 10 },
+      { value: 'MY-11', label_en: 'Terengganu', label_ar: 'ترنغانو', group: 'MY', order: 11 },
+      { value: 'MY-12', label_en: 'Sabah', label_ar: 'صباح', group: 'MY', order: 12 },
+      { value: 'MY-13', label_en: 'Sarawak', label_ar: 'ساراواك', group: 'MY', order: 13 },
+      { value: 'MY-14', label_en: 'Kuala Lumpur', label_ar: 'كوالا لمبور', group: 'MY', order: 14 },
+      { value: 'MY-15', label_en: 'Labuan', label_ar: 'لابوان', group: 'MY', order: 15 },
+      { value: 'MY-16', label_en: 'Putrajaya', label_ar: 'بوتراجايا', group: 'MY', order: 16 },
+    ],
+    refreshSource: {
+      url: REGIONS_URL,
+      intervalMs: 30 * 24 * 60 * 60 * 1000, // monthly
+      mergeStrategy: 'enrich',
+      timeoutMs: 20_000, // Wikidata SPARQL can be slow
+      mapping: {
+        arrayPath: 'results.bindings',
+        valueField: 'code.value',
+        labelEnField: 'labelEn.value',
+        labelArField: 'labelAr.value',
+        groupField: 'country.value',
       },
     },
   },

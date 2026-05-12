@@ -25,6 +25,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Plus,
   Pencil,
   Trash2,
@@ -36,6 +41,7 @@ import {
   ChevronRight,
   GripVertical,
   Sparkles,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getReferenceDataManager, getReferenceDataRefresher } from "../../engine/hooks-internal";
@@ -94,6 +100,8 @@ interface ReferenceEntryDraft {
   label_en: string;
   label_ar: string;
   order: string;
+  /** Per-entry extras (e.g. dialCode). Read-only in the UI; refresher-managed. */
+  data?: Record<string, unknown>;
   /** Snapshot of original entry to detect changes; missing for newly-added rows. */
   original?: ReferenceEntry;
   /** Existing isUserEdited flag from storage (for entries that were edited before). */
@@ -123,6 +131,7 @@ function entryToForm(entry: ReferenceEntry): ReferenceEntryDraft {
     label_en: entry.label_en,
     label_ar: entry.label_ar ?? "",
     order: entry.order !== undefined ? String(entry.order) : "",
+    data: entry.data,
     original: entry,
     isUserEdited: entry.isUserEdited,
   };
@@ -170,8 +179,10 @@ function formatTimestamp(iso?: string): string {
   if (Number.isNaN(d.getTime())) return iso;
   const now = Date.now();
   const diffMs = now - d.getTime();
-  const mins = Math.floor(diffMs / 60_000);
-  if (mins < 1) return "Just now";
+  const secs = Math.floor(diffMs / 1000);
+  if (secs < 5) return "Just now";
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
@@ -906,6 +917,9 @@ export function ReferenceDataTab() {
         label_en: draft.label_en.trim(),
         ...(draft.label_ar.trim() ? { label_ar: draft.label_ar.trim() } : {}),
         ...(draft.order.trim() !== "" ? { order: Number(draft.order) } : {}),
+        ...(draft.data && Object.keys(draft.data).length > 0
+          ? { data: draft.data }
+          : {}),
         ...(isUserEdited ? { isUserEdited: true } : {}),
       };
     });
@@ -1046,6 +1060,60 @@ export function ReferenceDataTab() {
                           <span className="text-xs text-muted-foreground">
                             {formatTimestamp(ds.lastRefreshedAt)}
                           </span>
+                          {ds.refreshHistory && ds.refreshHistory.length > 0 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  title="Refresh history"
+                                >
+                                  <History className="h-3 w-3" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80 p-0" align="start">
+                                <div className="px-3 py-2 border-b text-xs font-medium">
+                                  Last {ds.refreshHistory.length} refresh
+                                  {ds.refreshHistory.length === 1 ? "" : "es"}
+                                </div>
+                                <div className="max-h-64 overflow-y-auto divide-y">
+                                  {ds.refreshHistory.map((h, idx) => (
+                                    <div key={idx} className="px-3 py-2 text-xs space-y-0.5">
+                                      <div className="flex items-center gap-2">
+                                        <Badge
+                                          variant={
+                                            h.status === "error"
+                                              ? "destructive"
+                                              : "default"
+                                          }
+                                          className="h-4 px-1 text-[10px]"
+                                        >
+                                          {h.status}
+                                        </Badge>
+                                        <span className="text-muted-foreground">
+                                          {formatTimestamp(h.at)}
+                                        </span>
+                                        {h.entryCount !== undefined && (
+                                          <span className="text-muted-foreground ml-auto">
+                                            {h.entryCount} entries
+                                          </span>
+                                        )}
+                                      </div>
+                                      {h.error && (
+                                        <p className="text-destructive font-mono text-[11px] break-all">
+                                          {h.error}
+                                        </p>
+                                      )}
+                                      <p className="text-muted-foreground text-[10px]">
+                                        {new Date(h.at).toLocaleString()}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          )}
                         </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
@@ -1172,20 +1240,39 @@ export function ReferenceDataTab() {
                 <p className="text-sm text-muted-foreground py-3 text-center border rounded-md">
                   No entries yet. Click "Add Entry" to add lookup values.
                 </p>
-              ) : (
+              ) : (() => {
+                // Detect any per-entry extra keys (e.g. dialCode) across entries.
+                const extraKeySet = new Set<string>();
+                for (const e of form.entries) {
+                  if (e.data) for (const k of Object.keys(e.data)) extraKeySet.add(k);
+                }
+                const extraKeys = Array.from(extraKeySet);
+                const baseCols = "1fr 1fr 1fr 80px";
+                const extraCols = extraKeys.map(() => "120px").join(" ");
+                const gridTemplate = `${baseCols}${extraCols ? " " + extraCols : ""} 36px`;
+                return (
                 <div className="space-y-2">
                   {/* Header row */}
-                  <div className="grid grid-cols-[1fr_1fr_1fr_80px_36px] gap-2 px-1">
+                  <div
+                    className="grid gap-2 px-1"
+                    style={{ gridTemplateColumns: gridTemplate }}
+                  >
                     <p className="text-xs font-medium text-muted-foreground">Value *</p>
                     <p className="text-xs font-medium text-muted-foreground">Label (EN) *</p>
                     <p className="text-xs font-medium text-muted-foreground">Label (AR)</p>
                     <p className="text-xs font-medium text-muted-foreground">Order</p>
+                    {extraKeys.map((k) => (
+                      <p key={k} className="text-xs font-medium text-muted-foreground" title={`Extra field "${k}" populated by the API refresher`}>
+                        {k}
+                      </p>
+                    ))}
                     <span />
                   </div>
                   {form.entries.map((entry, index) => (
                     <div
                       key={index}
-                      className="grid grid-cols-[1fr_1fr_1fr_80px_36px] gap-2 items-center"
+                      className="grid gap-2 items-center"
+                      style={{ gridTemplateColumns: gridTemplate }}
                     >
                       <Input
                         value={entry.value}
@@ -1213,6 +1300,18 @@ export function ReferenceDataTab() {
                         type="number"
                         className="h-8 text-sm"
                       />
+                      {extraKeys.map((k) => {
+                        const v = entry.data?.[k];
+                        return (
+                          <div
+                            key={k}
+                            className="h-8 px-2 flex items-center rounded-md bg-muted/40 border text-xs font-mono text-muted-foreground truncate"
+                            title={v === undefined ? "(not set)" : String(v)}
+                          >
+                            {v === undefined || v === null ? "—" : String(v)}
+                          </div>
+                        );
+                      })}
                       <Button
                         type="button"
                         variant="ghost"
@@ -1225,7 +1324,8 @@ export function ReferenceDataTab() {
                     </div>
                   ))}
                 </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* External API Source (collapsible) */}

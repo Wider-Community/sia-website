@@ -15,7 +15,10 @@ import type {
   RefreshSource,
   ResponseMapping,
   ArEnrichmentSource,
+  ExtraFieldMapping,
+  RefreshHistoryEntry,
 } from './reference-data';
+import { REFRESH_HISTORY_LIMIT } from './reference-data';
 import type { ReferenceDataManager } from './reference-data';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -90,19 +93,32 @@ export class ReferenceDataRefresher {
         apiEntries,
         dataset.refreshSource.mergeStrategy,
       );
+      const now = new Date().toISOString();
+      const okEntry: RefreshHistoryEntry = {
+        at: now,
+        status: 'ok',
+        entryCount: mergedEntries.length,
+      };
       return await this.writeWithRetry(dataset.id, {
         entries: mergedEntries,
-        lastRefreshedAt: new Date().toISOString(),
+        lastRefreshedAt: now,
         lastRefreshStatus: 'ok',
         lastRefreshError: undefined,
+        refreshHistory: appendHistory(dataset.refreshHistory, okEntry),
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      const errEntry: RefreshHistoryEntry = {
+        at: new Date().toISOString(),
+        status: 'error',
+        error: msg,
+      };
       try {
         await this.writeWithRetry(dataset.id, {
           lastRefreshedAt: dataset.lastRefreshedAt,
           lastRefreshStatus: 'error',
           lastRefreshError: msg,
+          refreshHistory: appendHistory(dataset.refreshHistory, errEntry),
         });
       } catch {
         /* swallow — we already lost the original error if we can't write */
@@ -303,7 +319,45 @@ function projectItem(
     if (typeof o === 'number') entry.order = o;
     else if (o != null && !Number.isNaN(Number(o))) entry.order = Number(o);
   }
+  if (mapping.extraFields) {
+    const data: Record<string, unknown> = {};
+    let hasData = false;
+    for (const [key, def] of Object.entries(mapping.extraFields)) {
+      const v = resolveExtraField(item, def);
+      if (v !== undefined) {
+        data[key] = v;
+        hasData = true;
+      }
+    }
+    if (hasData) entry.data = data;
+  }
   return entry;
+}
+
+function resolveExtraField(item: unknown, def: ExtraFieldMapping): unknown {
+  if (def.template) return interpolateTemplate(def.template, item);
+  if (def.path) return readField(item, def.path);
+  return undefined;
+}
+
+/**
+ * Replace each ${path} placeholder with the value at that path on `item`.
+ * Returns undefined if any required path resolves to null/undefined — that
+ * way an incomplete record (e.g. a country with no idd) is skipped instead
+ * of producing a half-built string.
+ */
+function interpolateTemplate(template: string, item: unknown): string | undefined {
+  const pattern = /\$\{([^}]+)\}/g;
+  let missing = false;
+  const out = template.replace(pattern, (_, path: string) => {
+    const v = readField(item, path.trim());
+    if (v == null) {
+      missing = true;
+      return '';
+    }
+    return String(v);
+  });
+  return missing ? undefined : out;
 }
 
 function readField(item: unknown, path: string): unknown {
@@ -371,6 +425,10 @@ function merge(
     if (apiEntry.label_ar && !existingEntry.label_ar) {
       merged.label_ar = apiEntry.label_ar;
     }
+    // Merge data: API wins for keys it provides, existing keys are preserved.
+    if (apiEntry.data || existingEntry.data) {
+      merged.data = { ...(existingEntry.data ?? {}), ...(apiEntry.data ?? {}) };
+    }
     result.push(merged);
   }
   // Preserve existing entries not in the API response (curated additions).
@@ -378,4 +436,15 @@ function merge(
     if (!seenApiValues.has(e.value)) result.push(e);
   }
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Refresh history
+// ---------------------------------------------------------------------------
+
+function appendHistory(
+  existing: RefreshHistoryEntry[] | undefined,
+  next: RefreshHistoryEntry,
+): RefreshHistoryEntry[] {
+  return [next, ...(existing ?? [])].slice(0, REFRESH_HISTORY_LIMIT);
 }

@@ -12,6 +12,10 @@ import {
 } from '@/components/ui/select';
 import { useComponentRegistry, useComponent } from '@/portal/engine/hooks';
 import type { DynamicComponentProps } from '@/portal/engine/types';
+import {
+  CountryRegionPicker,
+  type CountryRegionValue,
+} from '@/portal/components/CountryRegionPicker';
 
 // ---------------------------------------------------------------------------
 // Live Component Preview — renders a definition as an interactive component
@@ -186,6 +190,34 @@ export function EnginePlayground() {
           </CardContent>
         </Card>
       )}
+
+      <CascadingPickerDemo locale={locale} />
     </div>
+  );
+}
+
+function CascadingPickerDemo({ locale }: { locale: 'en' | 'ar' }) {
+  const [value, setValue] = useState<CountryRegionValue>({});
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Country → Region (Cascading Picker)</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Pick a country, then pick one of its regions. Regions are filtered by
+          the <code>group</code> field on the <code>regions</code> dataset
+          (e.g. <code>SA</code> → 13 Saudi regions).
+        </p>
+        <div dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+          <CountryRegionPicker value={value} onChange={setValue} locale={locale} />
+        </div>
+        {(value.country || value.region) && (
+          <pre className="bg-muted p-3 rounded text-xs font-mono">
+{JSON.stringify(value, null, 2)}
+          </pre>
+        )}
+      </CardContent>
+    </Card>
   );
 }
