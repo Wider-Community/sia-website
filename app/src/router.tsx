@@ -13,7 +13,6 @@ import { PortalDashboardPage } from "@/portal/pages/dashboard/DashboardPage";
 import { OrganizationListPage } from "@/portal/pages/organizations/OrganizationListPage";
 import { OrganizationFormPage } from "@/portal/pages/organizations/OrganizationFormPage";
 import { OrganizationDetailPage } from "@/portal/pages/organizations/OrganizationDetailPage";
-import { OrganizationDynamicForm } from "@/portal/pages/organizations/OrganizationDynamicForm";
 import { ContactListPage } from "@/portal/pages/contacts/ContactListPage";
 import { ContactFormPage } from "@/portal/pages/contacts/ContactFormPage";
 import { ContactDetailPage } from "@/portal/pages/contacts/ContactDetailPage";
@@ -28,17 +27,14 @@ import { TaskDetailPage } from "@/portal/pages/tasks/TaskDetailPage";
 import { TaskEditPage } from "@/portal/pages/tasks/TaskEditPage";
 import { SlaSettingsPage } from "@/portal/pages/settings/SlaSettingsPage";
 import { PipelinePage } from "@/portal/pages/pipeline/PipelinePage";
-import { DynamicPipelinePage } from "@/portal/pages/pipeline/DynamicPipelinePage";
 import { MapPage } from "@/portal/pages/map/MapPage";
 import { EngagementListPage } from "@/portal/pages/engagements/EngagementListPage";
 import { EngagementFormPage } from "@/portal/pages/engagements/EngagementFormPage";
 import { EngagementDetailPage } from "@/portal/pages/engagements/EngagementDetailPage";
 import { EngagementPipelinePage } from "@/portal/pages/engagements/EngagementPipelinePage";
-import { EngagementFlowForm } from "@/portal/pages/engagements/EngagementFlowForm";
 import { MatchListPage } from "@/portal/pages/matches/MatchListPage";
 import { MatchCreatePage } from "@/portal/pages/matches/MatchCreatePage";
 import { MatchDetailPage } from "@/portal/pages/matches/MatchDetailPage";
-import { MatchFlowPage } from "@/portal/pages/matches/MatchFlowPage";
 import { MatchKanbanView } from "@/portal/pages/matches/MatchKanbanView";
 import { ControlBoardPage } from "@/portal/pages/control-board";
 import { FlowLauncherPage, FlowRunnerPage } from "@/portal/pages/flows";
@@ -109,7 +105,6 @@ export const router = createBrowserRouter([
           { path: "/portal", element: <PortalDashboardPage /> },
           { path: "/portal/organizations", element: <OrganizationListPage /> },
           { path: "/portal/organizations/create", element: <OrganizationFormPage /> },
-          { path: "/portal/organizations/dynamic-create", element: <OrganizationDynamicForm /> },
           { path: "/portal/organizations/edit/:id", element: <OrganizationFormPage /> },
           { path: "/portal/organizations/:id", element: <OrganizationDetailPage /> },
           { path: "/portal/contacts", element: <ContactListPage /> },
@@ -119,17 +114,14 @@ export const router = createBrowserRouter([
           { path: "/portal/engagements", element: <EngagementListPage /> },
           { path: "/portal/engagements/create", element: <EngagementFormPage /> },
           { path: "/portal/engagements/pipeline", element: <EngagementPipelinePage /> },
-          { path: "/portal/engagements/dynamic-create", element: <EngagementFlowForm /> },
           { path: "/portal/engagements/edit/:id", element: <EngagementFormPage /> },
           { path: "/portal/engagements/:id", element: <EngagementDetailPage /> },
           { path: "/portal/matches", element: <MatchListPage /> },
           { path: "/portal/matches/create", element: <MatchCreatePage /> },
-          { path: "/portal/matches/flow", element: <MatchFlowPage /> },
           { path: "/portal/matches/kanban", element: <MatchKanbanView /> },
           { path: "/portal/matches/:id", element: <MatchDetailPage /> },
           { path: "/portal/map", element: <MapPage /> },
           { path: "/portal/pipeline", element: <PipelinePage /> },
-          { path: "/portal/pipeline/dynamic", element: <DynamicPipelinePage /> },
           { path: "/portal/signing", element: <SigningListPage /> },
           { path: "/portal/signing/new", element: <NewSigningRequestPage /> },
           { path: "/portal/signing/:id", element: <SigningDetailPage /> },

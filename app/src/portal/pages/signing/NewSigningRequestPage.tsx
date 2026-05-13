@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreate, useList } from "@refinedev/core";
+import { useCreate, useGetIdentity, useList } from "@refinedev/core";
 import { toast } from "sonner";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,7 @@ interface SignerEntry {
 
 export function NewSigningRequestPage() {
   const navigate = useNavigate();
+  const { data: identity } = useGetIdentity<{ id: string }>();
   const { mutateAsync: create } = useCreate();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -231,7 +232,7 @@ export function NewSigningRequestPage() {
     fields.every((f) => f.signerId);
 
   const uploadPdfToR2 = async (file: File): Promise<string> => {
-    const userId = "user-1";
+    const userId = identity?.id ?? "user-1";
     const params = new URLSearchParams({
       orgId: organizationId || "signing",
       orgName: organizationId || "signing",
@@ -267,7 +268,7 @@ export function NewSigningRequestPage() {
           pdfUrl: storedPdfUrl,
           pdfFileName,
           message,
-          createdBy: "user-1",
+          createdBy: identity?.id ?? "user-1",
           ...(organizationId ? { organizationId } : {}),
           ...(engagementId ? { engagementId } : {}),
         },
