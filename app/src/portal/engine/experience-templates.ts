@@ -368,6 +368,378 @@ const dueDiligence: ExperienceTemplate = {
   },
 };
 
+const createOrganization: ExperienceTemplate = {
+  id: 'tpl-create-organization',
+  slug: 'create-organization',
+  name_en: 'Create Organization',
+  name_ar: 'إنشاء منظمة',
+  description: 'Three-stage organization creation: basic info, location, and description.',
+  category: 'onboarding',
+  flowTemplate: {
+    slug: 'create-organization-flow',
+    entryStageId: 'stage-org-basic-info',
+    stages: [
+      makeStage(
+        'stage-org-basic-info',
+        'basic-info',
+        'Basic Information',
+        'المعلومات الأساسية',
+        false,
+        ['comp-org-create-name', 'comp-org-create-type', 'comp-org-create-status'],
+        [makeTransition('t-org-basic-to-location', 'stage-org-basic-info', 'stage-org-location', 1)],
+      ),
+      makeStage(
+        'stage-org-location',
+        'location',
+        'Location & Details',
+        'الموقع والتفاصيل',
+        false,
+        ['comp-org-create-country', 'comp-org-create-city', 'comp-org-create-website'],
+        [makeTransition('t-org-location-to-desc', 'stage-org-location', 'stage-org-description', 1)],
+      ),
+      makeStage(
+        'stage-org-description',
+        'description',
+        'Description',
+        'الوصف',
+        true,
+        ['comp-org-create-description', 'comp-org-create-tags'],
+        [],
+      ),
+    ],
+    metadata: {
+      name_en: 'Create Organization',
+      name_ar: 'إنشاء منظمة',
+      description: 'Create a new organization with basic info, location, and description.',
+      purpose: 'onboarding',
+    },
+    status: 'active',
+  },
+  componentTemplates: [
+    makeComponentDef('org-create-name', 'text-input', 'field', 'Organization Name', 'اسم المنظمة', { type: 'string', minLength: 2 }, {}, [
+      { rule: 'required', message_en: 'Organization name is required', message_ar: 'اسم المنظمة مطلوب' },
+    ]),
+    makeComponentDef('org-create-type', 'select', 'field', 'Type', 'النوع', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Type is required', message_ar: 'النوع مطلوب' },
+    ], { type: 'reference', datasetSlug: 'organization-types' }),
+    makeComponentDef('org-create-status', 'select', 'field', 'Status', 'الحالة', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Status is required', message_ar: 'الحالة مطلوبة' },
+    ], { type: 'reference', datasetSlug: 'organization-statuses' }),
+    makeComponentDef('org-create-country', 'select', 'field', 'Country', 'الدولة', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Country is required', message_ar: 'الدولة مطلوبة' },
+    ], { type: 'reference', datasetSlug: 'countries' }),
+    makeComponentDef('org-create-city', 'text-input', 'field', 'City', 'المدينة', { type: 'string' }),
+    makeComponentDef('org-create-website', 'text-input', 'field', 'Website', 'الموقع الإلكتروني', { type: 'string', format: 'uri' }),
+    makeComponentDef('org-create-description', 'textarea', 'field', 'Description', 'الوصف', { type: 'string' }),
+    makeComponentDef('org-create-tags', 'text-input', 'field', 'Tags (comma-separated)', 'العلامات', { type: 'string' }),
+  ],
+  pageConfig: {
+    id: 'page-create-organization',
+    slug: 'create-organization',
+    title_en: 'Create Organization',
+    title_ar: 'إنشاء منظمة',
+    layout: 'single-column',
+    sections: [
+      { id: 'sec-org-basic', title_en: 'Basic Information', title_ar: 'المعلومات الأساسية', componentInstanceIds: ['comp-org-create-name', 'comp-org-create-type', 'comp-org-create-status'] },
+      { id: 'sec-org-location', title_en: 'Location & Details', title_ar: 'الموقع والتفاصيل', componentInstanceIds: ['comp-org-create-country', 'comp-org-create-city', 'comp-org-create-website'] },
+      { id: 'sec-org-description', title_en: 'Description', title_ar: 'الوصف', componentInstanceIds: ['comp-org-create-description', 'comp-org-create-tags'] },
+    ],
+  },
+};
+
+const createContact: ExperienceTemplate = {
+  id: 'tpl-create-contact',
+  slug: 'create-contact',
+  name_en: 'Create Contact',
+  name_ar: 'إنشاء جهة اتصال',
+  description: 'Two-stage contact creation: contact information and organization link.',
+  category: 'onboarding',
+  flowTemplate: {
+    slug: 'create-contact-flow',
+    entryStageId: 'stage-contact-info',
+    stages: [
+      makeStage(
+        'stage-contact-info',
+        'contact-info',
+        'Contact Information',
+        'معلومات الاتصال',
+        false,
+        ['comp-contact-create-first', 'comp-contact-create-last', 'comp-contact-create-email', 'comp-contact-create-phone', 'comp-contact-create-role'],
+        [makeTransition('t-contact-info-to-org', 'stage-contact-info', 'stage-contact-org-link', 1)],
+      ),
+      makeStage(
+        'stage-contact-org-link',
+        'org-link',
+        'Organization',
+        'المنظمة',
+        true,
+        ['comp-contact-create-org'],
+        [],
+      ),
+    ],
+    metadata: {
+      name_en: 'Create Contact',
+      name_ar: 'إنشاء جهة اتصال',
+      description: 'Create a new contact with personal information and organization link.',
+      purpose: 'onboarding',
+    },
+    status: 'active',
+  },
+  componentTemplates: [
+    makeComponentDef('contact-create-first', 'text-input', 'field', 'First Name', 'الاسم الأول', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'First name is required', message_ar: 'الاسم الأول مطلوب' },
+    ]),
+    makeComponentDef('contact-create-last', 'text-input', 'field', 'Last Name', 'اسم العائلة', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Last name is required', message_ar: 'اسم العائلة مطلوب' },
+    ]),
+    makeComponentDef('contact-create-email', 'email-input', 'field', 'Email', 'البريد الإلكتروني', { type: 'string', format: 'email' }),
+    makeComponentDef('contact-create-phone', 'phone-input', 'field', 'Phone', 'الهاتف', { type: 'string' }),
+    makeComponentDef('contact-create-role', 'text-input', 'field', 'Role', 'الدور', { type: 'string' }),
+    makeComponentDef('contact-create-org', 'select', 'field', 'Organization', 'المنظمة', { type: 'string' }, {}, [],
+      { type: 'entity', resource: 'organizations', displayField: 'name', valueField: 'id' }),
+  ],
+  pageConfig: {
+    id: 'page-create-contact',
+    slug: 'create-contact',
+    title_en: 'Create Contact',
+    title_ar: 'إنشاء جهة اتصال',
+    layout: 'single-column',
+    sections: [
+      { id: 'sec-contact-info', title_en: 'Contact Information', title_ar: 'معلومات الاتصال', componentInstanceIds: ['comp-contact-create-first', 'comp-contact-create-last', 'comp-contact-create-email', 'comp-contact-create-phone', 'comp-contact-create-role'] },
+      { id: 'sec-contact-org', title_en: 'Organization', title_ar: 'المنظمة', componentInstanceIds: ['comp-contact-create-org'] },
+    ],
+  },
+};
+
+const createEngagement: ExperienceTemplate = {
+  id: 'tpl-create-engagement',
+  slug: 'create-engagement',
+  name_en: 'Create Engagement',
+  name_ar: 'إنشاء مشاركة',
+  description: 'Three-stage engagement creation: basics, details, and timeline.',
+  category: 'onboarding',
+  flowTemplate: {
+    slug: 'create-engagement-flow',
+    entryStageId: 'stage-eng-basics',
+    stages: [
+      makeStage(
+        'stage-eng-basics',
+        'basics',
+        'Basics',
+        'الأساسيات',
+        false,
+        ['comp-eng-create-title', 'comp-eng-create-org', 'comp-eng-create-category'],
+        [makeTransition('t-eng-basics-to-details', 'stage-eng-basics', 'stage-eng-details', 1)],
+      ),
+      makeStage(
+        'stage-eng-details',
+        'details',
+        'Details',
+        'التفاصيل',
+        false,
+        ['comp-eng-create-stage', 'comp-eng-create-priority', 'comp-eng-create-description'],
+        [makeTransition('t-eng-details-to-timeline', 'stage-eng-details', 'stage-eng-timeline', 1)],
+      ),
+      makeStage(
+        'stage-eng-timeline',
+        'timeline',
+        'Timeline',
+        'الجدول الزمني',
+        true,
+        ['comp-eng-create-start', 'comp-eng-create-target', 'comp-eng-create-value', 'comp-eng-create-tags'],
+        [],
+      ),
+    ],
+    metadata: {
+      name_en: 'Create Engagement',
+      name_ar: 'إنشاء مشاركة',
+      description: 'Create a new engagement with organization, category, timeline, and deal value.',
+      purpose: 'onboarding',
+    },
+    status: 'active',
+  },
+  componentTemplates: [
+    makeComponentDef('eng-create-title', 'text-input', 'field', 'Title', 'العنوان', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Title is required', message_ar: 'العنوان مطلوب' },
+    ]),
+    makeComponentDef('eng-create-org', 'select', 'field', 'Organization', 'المنظمة', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Organization is required', message_ar: 'المنظمة مطلوبة' },
+    ], { type: 'entity', resource: 'organizations', displayField: 'name', valueField: 'id' }),
+    makeComponentDef('eng-create-category', 'select', 'field', 'Category', 'الفئة', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Category is required', message_ar: 'الفئة مطلوبة' },
+    ], { type: 'reference', datasetSlug: 'engagement-categories' }),
+    makeComponentDef('eng-create-stage', 'select', 'field', 'Stage', 'المرحلة', { type: 'string' }, { default: 'prospect' }, [],
+      { type: 'reference', datasetSlug: 'engagement-stages' }),
+    makeComponentDef('eng-create-priority', 'select', 'field', 'Priority', 'الأولوية', { type: 'string' }, { default: 'medium' }, [],
+      { type: 'reference', datasetSlug: 'priority-levels' }),
+    makeComponentDef('eng-create-description', 'textarea', 'field', 'Description', 'الوصف', { type: 'string' }),
+    makeComponentDef('eng-create-start', 'date', 'field', 'Start Date', 'تاريخ البدء', { type: 'string', format: 'date' }),
+    makeComponentDef('eng-create-target', 'date', 'field', 'Target Date', 'التاريخ المستهدف', { type: 'string', format: 'date' }),
+    makeComponentDef('eng-create-value', 'text-input', 'field', 'Deal Value', 'قيمة الصفقة', { type: 'string' }),
+    makeComponentDef('eng-create-tags', 'text-input', 'field', 'Tags', 'العلامات', { type: 'string' }),
+  ],
+  pageConfig: {
+    id: 'page-create-engagement',
+    slug: 'create-engagement',
+    title_en: 'Create Engagement',
+    title_ar: 'إنشاء مشاركة',
+    layout: 'single-column',
+    sections: [
+      { id: 'sec-eng-basics', title_en: 'Basics', title_ar: 'الأساسيات', componentInstanceIds: ['comp-eng-create-title', 'comp-eng-create-org', 'comp-eng-create-category'] },
+      { id: 'sec-eng-details', title_en: 'Details', title_ar: 'التفاصيل', componentInstanceIds: ['comp-eng-create-stage', 'comp-eng-create-priority', 'comp-eng-create-description'] },
+      { id: 'sec-eng-timeline', title_en: 'Timeline', title_ar: 'الجدول الزمني', componentInstanceIds: ['comp-eng-create-start', 'comp-eng-create-target', 'comp-eng-create-value', 'comp-eng-create-tags'] },
+    ],
+  },
+};
+
+const createTask: ExperienceTemplate = {
+  id: 'tpl-create-task',
+  slug: 'create-task',
+  name_en: 'Create Task',
+  name_ar: 'إنشاء مهمة',
+  description: 'Two-stage task creation: task details and context.',
+  category: 'onboarding',
+  flowTemplate: {
+    slug: 'create-task-flow',
+    entryStageId: 'stage-task-info',
+    stages: [
+      makeStage(
+        'stage-task-info',
+        'task-info',
+        'Task Details',
+        'تفاصيل المهمة',
+        false,
+        ['comp-task-create-title', 'comp-task-create-description', 'comp-task-create-due', 'comp-task-create-priority'],
+        [makeTransition('t-task-info-to-context', 'stage-task-info', 'stage-task-context', 1)],
+      ),
+      makeStage(
+        'stage-task-context',
+        'context',
+        'Context',
+        'السياق',
+        true,
+        ['comp-task-create-org', 'comp-task-create-engagement'],
+        [],
+      ),
+    ],
+    metadata: {
+      name_en: 'Create Task',
+      name_ar: 'إنشاء مهمة',
+      description: 'Create a new task with details, priority, and optional organization/engagement context.',
+      purpose: 'onboarding',
+    },
+    status: 'active',
+  },
+  componentTemplates: [
+    makeComponentDef('task-create-title', 'text-input', 'field', 'Title', 'العنوان', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Title is required', message_ar: 'العنوان مطلوب' },
+    ]),
+    makeComponentDef('task-create-description', 'textarea', 'field', 'Description', 'الوصف', { type: 'string' }),
+    makeComponentDef('task-create-due', 'date', 'field', 'Due Date', 'تاريخ الاستحقاق', { type: 'string', format: 'date' }, {}, [
+      { rule: 'required', message_en: 'Due date is required', message_ar: 'تاريخ الاستحقاق مطلوب' },
+    ]),
+    makeComponentDef('task-create-priority', 'select', 'field', 'Priority', 'الأولوية', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Priority is required', message_ar: 'الأولوية مطلوبة' },
+    ], { type: 'reference', datasetSlug: 'priority-levels' }),
+    makeComponentDef('task-create-org', 'select', 'field', 'Organization', 'المنظمة', { type: 'string' }, {}, [],
+      { type: 'entity', resource: 'organizations', displayField: 'name', valueField: 'id' }),
+    makeComponentDef('task-create-engagement', 'select', 'field', 'Engagement', 'المشاركة', { type: 'string' }, {}, [],
+      { type: 'entity', resource: 'engagements', displayField: 'title', valueField: 'id' }),
+  ],
+  pageConfig: {
+    id: 'page-create-task',
+    slug: 'create-task',
+    title_en: 'Create Task',
+    title_ar: 'إنشاء مهمة',
+    layout: 'single-column',
+    sections: [
+      { id: 'sec-task-info', title_en: 'Task Details', title_ar: 'تفاصيل المهمة', componentInstanceIds: ['comp-task-create-title', 'comp-task-create-description', 'comp-task-create-due', 'comp-task-create-priority'] },
+      { id: 'sec-task-context', title_en: 'Context', title_ar: 'السياق', componentInstanceIds: ['comp-task-create-org', 'comp-task-create-engagement'] },
+    ],
+  },
+};
+
+const createMatch: ExperienceTemplate = {
+  id: 'tpl-create-match',
+  slug: 'create-match',
+  name_en: 'Create Match',
+  name_ar: 'إنشاء مطابقة',
+  description: 'Three-stage match creation: organizations, match details, and expiration.',
+  category: 'matching',
+  flowTemplate: {
+    slug: 'create-match-flow',
+    entryStageId: 'stage-match-organizations',
+    stages: [
+      makeStage(
+        'stage-match-organizations',
+        'organizations',
+        'Organizations',
+        'المنظمات',
+        false,
+        ['comp-match-create-org-a', 'comp-match-create-org-b'],
+        [makeTransition('t-match-orgs-to-details', 'stage-match-organizations', 'stage-match-details', 1)],
+      ),
+      makeStage(
+        'stage-match-details',
+        'match-details',
+        'Match Details',
+        'تفاصيل المطابقة',
+        false,
+        ['comp-match-create-score', 'comp-match-create-reason', 'comp-match-create-category', 'comp-match-create-sector'],
+        [makeTransition('t-match-details-to-expiry', 'stage-match-details', 'stage-match-expiry', 1)],
+      ),
+      makeStage(
+        'stage-match-expiry',
+        'expiry',
+        'Expiration',
+        'انتهاء الصلاحية',
+        true,
+        ['comp-match-create-expires'],
+        [],
+      ),
+    ],
+    metadata: {
+      name_en: 'Create Match',
+      name_ar: 'إنشاء مطابقة',
+      description: 'Create a new match between two organizations with score, reason, and expiration.',
+      purpose: 'matching',
+    },
+    status: 'active',
+  },
+  componentTemplates: [
+    makeComponentDef('match-create-org-a', 'select', 'field', 'Organization A', 'المنظمة أ', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Organization A is required', message_ar: 'المنظمة أ مطلوبة' },
+    ], { type: 'entity', resource: 'organizations', displayField: 'name', valueField: 'id' }),
+    makeComponentDef('match-create-org-b', 'select', 'field', 'Organization B', 'المنظمة ب', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Organization B is required', message_ar: 'المنظمة ب مطلوبة' },
+    ], { type: 'entity', resource: 'organizations', displayField: 'name', valueField: 'id' }),
+    makeComponentDef('match-create-score', 'number-input', 'field', 'Match Score (0-100)', 'درجة المطابقة', { type: 'number', minimum: 0, maximum: 100 }, {}, [
+      { rule: 'required', message_en: 'Match score is required', message_ar: 'درجة المطابقة مطلوبة' },
+    ]),
+    makeComponentDef('match-create-reason', 'textarea', 'field', 'Match Reason', 'سبب المطابقة', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Match reason is required', message_ar: 'سبب المطابقة مطلوب' },
+    ]),
+    makeComponentDef('match-create-category', 'select', 'field', 'Category', 'الفئة', { type: 'string' }, {}, [
+      { rule: 'required', message_en: 'Category is required', message_ar: 'الفئة مطلوبة' },
+    ], { type: 'reference', datasetSlug: 'match-categories' }),
+    makeComponentDef('match-create-sector', 'select', 'field', 'Sector', 'القطاع', { type: 'string' }, {}, [],
+      { type: 'reference', datasetSlug: 'sectors' }),
+    makeComponentDef('match-create-expires', 'date', 'field', 'Expiration Date', 'تاريخ انتهاء الصلاحية', { type: 'string', format: 'date' }),
+  ],
+  pageConfig: {
+    id: 'page-create-match',
+    slug: 'create-match',
+    title_en: 'Create Match',
+    title_ar: 'إنشاء مطابقة',
+    layout: 'single-column',
+    sections: [
+      { id: 'sec-match-orgs', title_en: 'Organizations', title_ar: 'المنظمات', componentInstanceIds: ['comp-match-create-org-a', 'comp-match-create-org-b'] },
+      { id: 'sec-match-details', title_en: 'Match Details', title_ar: 'تفاصيل المطابقة', componentInstanceIds: ['comp-match-create-score', 'comp-match-create-reason', 'comp-match-create-category', 'comp-match-create-sector'] },
+      { id: 'sec-match-expiry', title_en: 'Expiration', title_ar: 'انتهاء الصلاحية', componentInstanceIds: ['comp-match-create-expires'] },
+    ],
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Template registry
 // ---------------------------------------------------------------------------
@@ -376,6 +748,11 @@ export const EXPERIENCE_TEMPLATES: ExperienceTemplate[] = [
   organizationOnboarding,
   dealMatching,
   dueDiligence,
+  createOrganization,
+  createContact,
+  createEngagement,
+  createTask,
+  createMatch,
 ];
 
 export function getTemplateBySlug(slug: string): ExperienceTemplate | undefined {
