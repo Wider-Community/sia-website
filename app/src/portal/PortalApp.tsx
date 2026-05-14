@@ -14,6 +14,7 @@ import { PortalLayout } from "./layouts/PortalLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { entityLayer } from "./providers/mujarrad-data-provider";
 import { initializeEngine, initializeNotificationBridge } from "./engine";
+import { initializeFlowEntityBridge } from "./engine/flow-entity-bridge";
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
 
@@ -21,6 +22,7 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
 if (!USE_MOCK) {
   initializeEngine(entityLayer);
   initializeNotificationBridge();
+  initializeFlowEntityBridge();
 }
 
 const dataProvider = USE_MOCK ? mockDataProvider : mujarradDataProvider;
