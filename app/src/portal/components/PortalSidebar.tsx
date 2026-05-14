@@ -34,6 +34,8 @@ import {
   Map as MapIcon,
   Layers,
   Link2,
+  Workflow,
+  SlidersHorizontal,
 } from "lucide-react";
 
 const navItems = [
@@ -44,8 +46,10 @@ const navItems = [
   { title: "Contacts", path: "/portal/contacts", icon: Users },
   { title: "Map", path: "/portal/map", icon: MapIcon },
   { title: "Pipeline", path: "/portal/pipeline", icon: Kanban },
+  { title: "Flows", path: "/portal/flows", icon: Workflow },
   { title: "Documents", path: "/portal/signing", icon: FileSignature },
   { title: "Tasks", path: "/portal/tasks", icon: CheckSquare },
+  { title: "Control Board", path: "/portal/control-board", icon: SlidersHorizontal },
   { title: "Settings", path: "/portal/settings/sla", icon: Settings },
 ];
 

@@ -118,7 +118,7 @@ export class ComponentResolver {
    */
   async prefetchDefinitions(definitionIds: string[]): Promise<void> {
     const uncached = definitionIds.filter((id) => !definitionCache.has(id));
-    await Promise.all(
+    const results = await Promise.allSettled(
       uncached.map(async (id) => {
         const def = await this.registry.getDefinition(id);
         if (def) {
@@ -126,6 +126,10 @@ export class ComponentResolver {
         }
       }),
     );
+    const failed = results.filter((r) => r.status === 'rejected');
+    if (failed.length > 0) {
+      console.warn(`[Resolver] Failed to prefetch ${failed.length}/${uncached.length} definitions`);
+    }
   }
 
   /**
