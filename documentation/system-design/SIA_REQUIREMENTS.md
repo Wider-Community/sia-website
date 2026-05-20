@@ -1,10 +1,5 @@
 # SIA Requirements
 
-**Version:** 1.0
-**Date:** May 2026
-
----
-
 ## Product Overviewseed
 
 SIA is implemented as a bifurcated product:
@@ -22,7 +17,7 @@ SIA is implemented as a bifurcated product:
 - Support English + Arabic presentation.
 - Focus on investor and company conversion.
 - Provide calls to action that lead visitors to portal sign-up/login.
-seed or reset the engine from the control board.
+  seed or reset the engine from the control board.
 
 ### SIA Portal (`/portal`)
 
@@ -30,7 +25,7 @@ seed or reset the engine from the control board.
 - Display an operations dashboard with KPI cards, activity ticker, SLA health, and recent events.
 - Manage organizations: list, create, edit, and detail view.
 - Manage contacts: list, create, edit, and detail view.
-- Manage engagements: list, create, edit, detail, pipeline view, and workflow-driven engagement flows. 
+- Manage engagements: list, create, edit, detail, pipeline view, and workflow-driven engagement flows.
 - Manage matches: list, create, detail, match flow view, kanban view, and mutual match tracking.
 - Manage tasks: list, board view, create, edit, and detail view.
 - Support signing workflows: signing request list, new request creation, request detail, and public signing page.
@@ -43,6 +38,7 @@ seed or reset the engine from the control board.
 - Maintain a component registry for dynamic UI/form component definitions.
 - Provide a flow designer and flow management controls.
 - Manage notifications, templates, and trigger definitions.
+- Provide a runtime notification module for event-driven alerts, workflow notifications, and in-app notification delivery.
 - Provide authorization management tools.
 - Manage reference data sets.
 - Offer an engine playground for testing dynamic behavior.
@@ -55,16 +51,28 @@ seed or reset the engine from the control board.
 - The site supports bilingual presentation and localization.
 - The portal is structured for responsive dashboard, list, and workflow management interfaces.
 - The control board supports internal engine administration without exposing those tools publicly.
+- The platform includes an MCP server to coordinate portal services, manage control interfaces, and support reliable runtime operations.
+- The system must support efficient data loading, indexing, and retrieval so that data pages and search results remain performant.
+- Search must be enabled through a Typesense-backed search engine for fast, relevance-based access to indexed records.
+- Security requirements include secure authentication and authorization controls, role-based access to portal and control-board features, and protection of user and document data.
+- Accessibility requirements include support for bilingual users and compatibility across major browsers and mobile devices.
+- Reliability requirements include resilient notification delivery, graceful handling of backend/search service failures, and observable error reporting for operational monitoring.
+- Quality requirements include search accuracy, data indexing integrity, timely notification delivery, and stable portal response under typical load.
 
 ## Tech Stack
 
 - Front-end: `React`, `TypeScript`, `Vite`, `Tailwind CSS`.
 - UI framework: `Refine` for authenticated data-driven admin flows.
 - Routing: `react-router-dom`.
-- Component/library ecosystem: `lucide-react`, `@dnd-kit/core`, `framer-motion`, `recharts`, `react-pdf`, `react-signature-canvas`, `zustand`, `@refinedev/*`.
+- Data fetching/caching: `@tanstack/react-query` via Refine.
+- Localization: `i18next` and `react-i18next` for bilingual content.
+- Notification UI/runtime: `sonner` for toast and notification delivery.
+- OAuth login: `@react-oauth/google` for Google sign-in.
+- Form handling: `react-hook-form` and `@refinedev/react-hook-form`.
+- Component/library ecosystem: `lucide-react`, `@dnd-kit/core`, `framer-motion`, `recharts`, `react-simple-maps`, `react-pdf`, `react-signature-canvas`, `zustand`, `@refinedev/*`.
 - Portal engine: custom dynamic component/flow/notification engine under `app/src/portal/engine`.
 - Data handling: mock and `mujarrad` data providers in `app/src/portal/providers`.
-- Document workflow: PDF viewer and signature capture components.
+- Document workflow: `pdf-lib` plus PDF viewer and signature capture components.
 
 ## Use Cases
 
